@@ -320,4 +320,74 @@ class EmailTemplates {
         
         return self::getBaseTemplate('Willkommen bei IBC', $content);
     }
+    
+    /**
+     * Get profile reminder email template
+     * 
+     * @param string $firstName User's first name
+     * @param string $profileLink Link to profile page
+     * @return string Complete HTML email
+     */
+    public static function getProfileReminderTemplate($firstName, $profileLink) {
+        $content = '
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td align="center" style="padding: 0 0 30px;">
+                    <div style="font-size: 64px; line-height: 1;">📝</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h2 style="margin: 0 0 20px; font-size: 28px; font-weight: 700; color: #1a1a1a; text-align: center;">
+                        Zeit für ein Profil-Update!
+                    </h2>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <p style="margin: 0 0 16px; font-size: 16px; color: #333333; line-height: 1.6;">
+                        Hallo ' . htmlspecialchars($firstName) . ',
+                    </p>
+                    <p style="margin: 0 0 16px; font-size: 16px; color: #333333; line-height: 1.6;">
+                        dein Profil wurde seit über einem Jahr nicht aktualisiert. Um sicherzustellen, dass wir immer aktuelle Informationen haben und in Kontakt bleiben können, bitten wir dich, dein Profil zu überprüfen.
+                    </p>
+                    <p style="margin: 0 0 16px; font-size: 16px; color: #333333; line-height: 1.6;">
+                        Bitte nimm dir einen kurzen Moment Zeit, um deine Daten zu überprüfen und bei Bedarf zu aktualisieren.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" style="padding: 30px 0;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #6cb73e 0%, #5a9933 100%); box-shadow: 0 4px 15px rgba(108, 183, 62, 0.3);">
+                                <a href="' . htmlspecialchars($profileLink) . '" target="_blank" style="display: inline-block; padding: 16px 42px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px;">
+                                    Profil aktualisieren
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div style="padding: 20px; background-color: #f0fdf4; border-left: 4px solid #6cb73e; border-radius: 8px; margin-top: 20px;">
+                        <p style="margin: 0; font-size: 14px; color: #166534; line-height: 1.6;">
+                            <strong>💡 Tipp:</strong> Ein aktuelles Profil hilft uns, dich besser zu unterstützen und relevante Informationen mit dir zu teilen.
+                        </p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <p style="margin: 20px 0 0; font-size: 14px; color: #666666; line-height: 1.6; text-align: center;">
+                        Vielen Dank für deine Unterstützung!<br>
+                        Dein IBC-Team
+                    </p>
+                </td>
+            </tr>
+        </table>';
+        
+        return self::getBaseTemplate('Profil Aktualisierung', $content);
+    }
 }

@@ -441,6 +441,22 @@ class MailService {
     }
     
     /**
+     * Get profile reminder email template
+     * Uses the modern responsive profile reminder email design from EmailTemplates
+     * 
+     * @param string $firstName User's first name for personalization
+     * @param string $profileLink URL to the profile page
+     * @return string Complete HTML profile reminder email template
+     */
+    public static function getProfileReminderEmailTemplate(string $firstName, string $profileLink): string {
+        // Load the new responsive email templates
+        require_once __DIR__ . '/../includes/templates/email_templates.php';
+        
+        // Use the new responsive profile reminder template
+        return EmailTemplates::getProfileReminderTemplate($firstName, $profileLink);
+    }
+    
+    /**
      * Create and configure PHPMailer instance with SMTP settings
      * SMTPDebug is hard-coded to 0 (disabled) by default for security.
      * Debug mode is only enabled when ENVIRONMENT === 'development'.

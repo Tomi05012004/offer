@@ -26,7 +26,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $token = Auth::generateInvitationToken($email, $role, $_SESSION['user_id'], $validityHours);
             $inviteLink = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/pages/auth/register.php?token=' . $token;
-            $message = 'Einladung erstellt! Link: ' . $inviteLink;
+            
+            // For Alumni users, also send Microsoft Entra invitation
+            if (in_array($role, ['alumni', 'alumni_vorstand', 'alumni_finanz'])) {
+                try {
+                    require_once __DIR__ . '/../../includes/services/MicrosoftGraphService.php';
+                    
+                    // Extract name from email (e.g., "max.mustermann@example.com" -> "Max Mustermann")
+                    $emailParts = explode('@', $email);
+                    $namePart = $emailParts[0] ?? 'Alumni';
+                    $nameParts = explode('.', $namePart);
+                    $firstName = ucfirst($nameParts[0] ?? 'Alumni');
+                    $lastName = isset($nameParts[1]) ? ucfirst($nameParts[1]) : '';
+                    $displayName = trim($firstName . ' ' . $lastName);
+                    
+                    // Create redirect URL (where user lands after accepting invitation)
+                    $redirectUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/pages/auth/login.php';
+                    
+                    // Invite user to Microsoft Entra ID
+                    $graphService = new MicrosoftGraphService();
+                    $azureUserId = $graphService->inviteGuest($email, $displayName, $redirectUrl);
+                    
+                    $message = 'Einladung erstellt und an Microsoft Entra ID gesendet! Link: ' . $inviteLink;
+                } catch (Exception $e) {
+                    // Log error but still show local invitation link
+                    error_log('Failed to invite user to Microsoft Entra ID: ' . $e->getMessage());
+                    $message = 'Einladung erstellt! Link: ' . $inviteLink . ' (Hinweis: Microsoft Entra Einladung fehlgeschlagen - siehe Logs)';
+                }
+            } else {
+                $message = 'Einladung erstellt! Link: ' . $inviteLink;
+            }
         }
     } else if (isset($_POST['change_role'])) {
         $userId = $_POST['user_id'] ?? 0;

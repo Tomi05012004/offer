@@ -33,8 +33,8 @@ foreach ($groups as $group) {
     $match = 'NEIN';
     
     foreach (ROLE_MAPPING as $roleKey => $mapping) {
-        if ($mapping === $name || $mapping === $id) {
-            $match = "JA -> Rolle: <strong>$roleKey</strong>";
+        if ($roleKey === $name || $roleKey === $id) {
+            $match = "JA -> Rolle: <strong>$mapping</strong>";
             break;
         }
     }

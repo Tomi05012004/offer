@@ -19,7 +19,7 @@ define('CLIENT_SECRET', 'DEIN_SECRET');     // ANPASSEN
 define('REDIRECT_URI', 'https://deine-domain.de/auth/callback.php'); // ANPASSEN
 
 // Role Mapping (IDs aus Entra -> Interne Rollen)
-const ROLE_MAPPING = [
+define('ROLE_MAPPING', [
     'board_finance'   => '3ad43a76-75af-48a7-9974-7a2cf350f349',
     'board_internal'  => 'f61e99e2-2717-4aff-b3f5-ef2ec489b598',
     'board_external'  => 'bf17e26b-e5f1-4a63-ae56-91ab69ae33ca',
@@ -30,12 +30,20 @@ const ROLE_MAPPING = [
     'head'            => '9456552d-0f49-42ff-bbde-495a60e61e61',
     'member'          => '70f07477-ea4e-4edc-b0e6-7e25968f16c0',
     'candidate'       => '75edcb0a-c610-4ceb-82f2-457a9dde4fc0'
-];
+]);
 
 // Helper Functions
 function asset($path) {
+    // Validate and sanitize HTTP_HOST to prevent header injection attacks
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Only allow alphanumeric characters, dots, hyphens, and colons (for port)
+    if (!preg_match('/^[a-zA-Z0-9.\-:]+$/', $host)) {
+        $host = 'localhost'; // Fallback to safe default
+    }
+    
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-    return $protocol . $_SERVER['HTTP_HOST'] . '/' . ltrim($path, '/');
+    return $protocol . $host . '/' . ltrim($path, '/');
 }
 
 function isActivePath($path) {

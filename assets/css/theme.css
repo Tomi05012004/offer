@@ -3838,3 +3838,72 @@ body:not(.dark-mode) .hero-gradient .hero-date {
 /* ============================================
    END OF RESPONSIVE ENHANCEMENTS
    ============================================ */
+
+/* ============================================
+   UI/UX FIXES FOR LIGHT MODE AND MOBILE
+   ============================================ */
+
+/* --- SIDEBAR FIXES (Immer dunkel, Schrift immer weiß) --- */
+.sidebar {
+    background-color: var(--ibc-blue) !important; /* Dein Dunkelblau */
+    color: #ffffff !important;
+}
+.sidebar a, .sidebar i, .sidebar span {
+    color: #ffffff !important; /* Erzwinge Weiß auch im Lightmode */
+}
+.sidebar a:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+.sidebar .active-link { /* Falls du eine Klasse für aktive Links hast */
+    border-right: 4px solid var(--ibc-green);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* --- LIGHT/DARK MODE GLOBALS --- */
+body.light-mode {
+    background-color: #f3f4f6 !important; /* Helles Grau für den Body */
+    color: #1f2937 !important; /* Dunkles Grau für Text */
+}
+body.light-mode .card, body.light-mode .bg-white {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb;
+}
+body.dark-mode {
+    background-color: #111827 !important; /* Sehr dunkles Grau */
+    color: #f9fafb !important;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 250px;
+        z-index: 50;
+        transform: translateX(-100%); /* Standardmäßig versteckt */
+        transition: transform 0.3s ease-in-out;
+    }
+    .sidebar.open {
+        transform: translateX(0); /* Zeigen wenn Klasse 'open' */
+    }
+    .main-content {
+        margin-left: 0 !important; /* Kein Rand auf Handy */
+        width: 100% !important;
+    }
+    /* Overlay wenn Sidebar offen */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 40;
+    }
+    .sidebar-overlay.active {
+        display: block;
+    }
+}

@@ -421,9 +421,7 @@ ob_start();
                 $entraRoles = json_decode($user['entra_roles'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($entraRoles)) {
                     // Extract displayName from each group object (groups now contain both id and displayName)
-                    $displayRoles = array_filter(array_map(function($group) {
-                        return is_array($group) && isset($group['displayName']) ? $group['displayName'] : $group;
-                    }, $entraRoles));
+                    $displayRoles = extractGroupDisplayNames($entraRoles);
                 } else {
                     error_log("Failed to decode entra_roles for user ID " . intval($user['id']) . ": " . json_last_error_msg());
                 }

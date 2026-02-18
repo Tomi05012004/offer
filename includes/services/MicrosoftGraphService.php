@@ -18,24 +18,6 @@ class MicrosoftGraphService {
     private $servicePrincipalId;
     
     /**
-     * Role mapping: role values to their respective Azure App Role IDs
-     * Configured with actual Azure App Role IDs from Azure Portal
-     * Each role must have a unique GUID from Azure AD App Roles
-     */
-    private const ROLE_MAPPING = [
-        'ehrenmitglied' => '09686b92-dbc8-4e66-a851-2dafea64df89',
-        'alumni_finanz' => '39597941-0a22-4922-9587-e3d62ab986d6',
-        'alumni_vorstand' => '8a45c6aa-e791-422e-b964-986d8bdd2ed8',
-        'alumni' => '7ffd9c73-a828-4e34-a9f4-10f4ed00f796',
-        'vorstand_extern' => 'bf17e26b-e5f1-4a63-ae56-91ab69ae33ca',
-        'vorstand_intern' => 'f61e99e2-2717-4aff-b3f5-ef2ec489b598',
-        'vorstand_finanzen' => '3ad43a76-75af-48a7-9974-7a2cf350f349',
-        'ressortleiter' => '9456552d-0f49-42ff-bbde-495a60e61e61',
-        'mitglied' => '70f07477-ea4e-4edc-b0e6-7e25968f16c0',
-        'anwaerter' => '75edcb0a-c610-4ceb-82f2-457a9dde4fc0'
-    ];
-    
-    /**
      * Constructor: Obtain access token via Client Credentials Flow or use provided user token
      * 
      * @param string|null $userAccessToken Optional user access token (from OAuth login)
@@ -166,11 +148,11 @@ class MicrosoftGraphService {
      */
     public function assignRole(string $userId, string $roleValue): bool {
         // Validate role exists in mapping
-        if (!isset(self::ROLE_MAPPING[$roleValue])) {
+        if (!isset(ROLE_MAPPING[$roleValue])) {
             throw new Exception("Invalid role value: {$roleValue}");
         }
         
-        $roleId = self::ROLE_MAPPING[$roleValue];
+        $roleId = ROLE_MAPPING[$roleValue];
         
         // Validate that role ID has been configured (not using placeholder)
         if (strpos($roleId, 'PLACEHOLDER_') === 0) {
@@ -368,7 +350,7 @@ class MicrosoftGraphService {
             }
             
             // Get all role IDs from ROLE_MAPPING
-            $mappedRoleIds = array_values(self::ROLE_MAPPING);
+            $mappedRoleIds = array_values(ROLE_MAPPING);
             
             // Loop through assignments to find one that matches our ROLE_MAPPING
             foreach ($body['value'] as $assignment) {

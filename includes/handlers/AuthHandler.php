@@ -528,6 +528,9 @@ class AuthHandler {
                     $entraGroups = $profileData['groups'] ?? [];
                     error_log("DEBUG ENTRA GROUPS: " . print_r($entraGroups, true));
                     
+                    // Debug logging for role matching
+                    error_log('DEBUG ENTRA - Gefundene Gruppen (Raw): ' . print_r($entraGroups, true));
+                    
                     // Log groups for debugging
                     if (!empty($entraGroups)) {
                         error_log("Microsoft Entra groups fetched for user {$azureOid}: " . json_encode($entraGroups));
@@ -588,6 +591,9 @@ class AuthHandler {
                 'Alumni Finanz' => 'alumni_auditor'
             ];
             
+            // Debug logging for expected role keys
+            error_log('DEBUG ENTRA - Erwartete Rollen-Keys: ' . print_r(array_keys($roleMapping), true));
+            
             // Define role hierarchy for priority selection (higher value = higher priority)
             $roleHierarchy = [
                 'candidate' => 1,
@@ -602,18 +608,12 @@ class AuthHandler {
                 'alumni_auditor' => 10
             ];
             
-            // Combine roles from JWT token and Microsoft Entra groups
-            // This ensures we check both sources for role assignment
-            $allRoleSources = array_merge($azureRoles, $entraGroups);
-            
-            // Log all role sources for debugging
-            error_log("Role determination for user {$azureOid}: JWT roles = " . json_encode($azureRoles) . ", Entra groups = " . json_encode($entraGroups));
-            
             // Find the role with the highest priority from all sources
             $highestPriority = 0;
             $selectedRole = 'member'; // Default to member if no valid role found
             
-            foreach ($allRoleSources as $roleSource) {
+            // Process JWT roles (simple strings)
+            foreach ($azureRoles as $roleSource) {
                 // Check both exact match and lowercase match for compatibility
                 $roleLower = strtolower($roleSource);
                 
@@ -624,6 +624,7 @@ class AuthHandler {
                     if ($priority > $highestPriority) {
                         $highestPriority = $priority;
                         $selectedRole = $internalRole;
+                        error_log("Treffer! User erhält Rolle: " . $internalRole);
                     }
                 } elseif (isset($roleMapping[$roleLower])) {
                     $internalRole = $roleMapping[$roleLower];
@@ -632,6 +633,63 @@ class AuthHandler {
                     if ($priority > $highestPriority) {
                         $highestPriority = $priority;
                         $selectedRole = $internalRole;
+                        error_log("Treffer! User erhält Rolle: " . $internalRole);
+                    }
+                }
+            }
+            
+            // Process Entra groups (objects with id and displayName)
+            foreach ($entraGroups as $group) {
+                // Handle both object and string formats for backwards compatibility
+                if (is_array($group)) {
+                    $displayName = $group['displayName'] ?? null;
+                    $groupId = $group['id'] ?? null;
+                    
+                    // Check displayName against roleMapping
+                    if ($displayName && isset($roleMapping[$displayName])) {
+                        $internalRole = $roleMapping[$displayName];
+                        $priority = $roleHierarchy[$internalRole] ?? 0;
+                        
+                        if ($priority > $highestPriority) {
+                            $highestPriority = $priority;
+                            $selectedRole = $internalRole;
+                            error_log("Treffer! User erhält Rolle: " . $internalRole);
+                        }
+                    }
+                    
+                    // Check group ID against roleMapping
+                    if ($groupId && isset($roleMapping[$groupId])) {
+                        $internalRole = $roleMapping[$groupId];
+                        $priority = $roleHierarchy[$internalRole] ?? 0;
+                        
+                        if ($priority > $highestPriority) {
+                            $highestPriority = $priority;
+                            $selectedRole = $internalRole;
+                            error_log("Treffer! User erhält Rolle: " . $internalRole);
+                        }
+                    }
+                } else {
+                    // Fallback for string format (backwards compatibility)
+                    $roleLower = strtolower($group);
+                    
+                    if (isset($roleMapping[$group])) {
+                        $internalRole = $roleMapping[$group];
+                        $priority = $roleHierarchy[$internalRole] ?? 0;
+                        
+                        if ($priority > $highestPriority) {
+                            $highestPriority = $priority;
+                            $selectedRole = $internalRole;
+                            error_log("Treffer! User erhält Rolle: " . $internalRole);
+                        }
+                    } elseif (isset($roleMapping[$roleLower])) {
+                        $internalRole = $roleMapping[$roleLower];
+                        $priority = $roleHierarchy[$internalRole] ?? 0;
+                        
+                        if ($priority > $highestPriority) {
+                            $highestPriority = $priority;
+                            $selectedRole = $internalRole;
+                            error_log("Treffer! User erhält Rolle: " . $internalRole);
+                        }
                     }
                 }
             }

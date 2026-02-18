@@ -984,7 +984,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             const isOpen = sidebar.classList.contains('-translate-x-full');
             
             sidebar.classList.toggle('-translate-x-full');
+            sidebar.classList.toggle('open'); // Add CSS class for mobile sidebar
             sidebarOverlay.classList.toggle('hidden');
+            sidebarOverlay.classList.toggle('active'); // Add CSS class for overlay
             
             // Animate hamburger to X and back
             if (isOpen) {
@@ -1018,7 +1020,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 !mobileMenuBtn.contains(e.target) &&
                 !sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('open'); // Remove CSS class for mobile sidebar
                 sidebarOverlay.classList.add('hidden');
+                sidebarOverlay.classList.remove('active'); // Remove CSS class for overlay
             }
         });
         

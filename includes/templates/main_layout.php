@@ -979,7 +979,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             const menuIconMiddle = document.getElementById('menu-icon-middle');
             const menuIconBottom = document.getElementById('menu-icon-bottom');
 
-            if(btn) {
+            if(btn && sidebar) {
                 btn.addEventListener('click', function() {
                     sidebar.classList.toggle('open');
                     if(overlay) overlay.classList.toggle('active');
@@ -1002,7 +1002,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 });
             }
 
-            if(overlay) {
+            if(overlay && sidebar) {
                 overlay.addEventListener('click', function() {
                     sidebar.classList.remove('open');
                     overlay.classList.remove('active');

@@ -87,8 +87,7 @@ try {
             
             if ($success) {
                 // Update last_reminder_sent_at to prevent re-sending
-                // Also update last_profile_update to TODAY to reset the counter
-                $updateStmt = $userDb->prepare("UPDATE users SET last_reminder_sent_at = NOW(), last_profile_update = CURDATE() WHERE id = ?");
+                $updateStmt = $userDb->prepare("UPDATE users SET last_reminder_sent_at = NOW() WHERE id = ?");
                 $updateStmt->execute([$userId]);
                 
                 $emailsSent++;

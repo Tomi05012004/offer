@@ -33,6 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     require_once __DIR__ . '/../../includes/services/MicrosoftGraphService.php';
                     
                     // Extract name from email (e.g., "max.mustermann@example.com" -> "Max Mustermann")
+                    // Note: This is a best-effort approach since we don't have actual user data yet.
+                    // The user can update their display name in Azure AD after accepting the invitation.
                     $emailParts = explode('@', $email);
                     $namePart = $emailParts[0] ?? 'Alumni';
                     $nameParts = explode('.', $namePart);

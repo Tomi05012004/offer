@@ -2,8 +2,8 @@
 /**
  * Profile Reminder Cron Script
  * 
- * Sends reminder emails to all users whose profile (updated_at) hasn't been updated in over 1 year.
- * Implements idempotency: only sends if last_reminder_sent_at is NULL or older than 13 months.
+ * Sends reminder emails to users whose last_profile_update is older than 365 days or NULL.
+ * After sending, updates last_profile_update to NOW() to prevent daily emails.
  * 
  * Usage: php cron/send_profile_reminders.php
  */
@@ -23,23 +23,20 @@ try {
     $contentDb = Database::getContentDB();
     
     // Query to find users with outdated profiles
-    // - updated_at older than 1 year (12 months)
-    // - last_reminder_sent_at is NULL OR older than 13 months (spam protection)
+    // - last_profile_update older than 365 days (1 year) OR is NULL
     // - deleted_at IS NULL (exclude soft-deleted users)
     $stmt = $userDb->prepare("
         SELECT 
             u.id,
             u.email,
-            u.updated_at,
-            u.last_reminder_sent_at,
+            u.last_profile_update,
             ap.first_name,
             ap.last_name
         FROM users u
         LEFT JOIN " . DB_CONTENT_NAME . ".alumni_profiles ap ON u.id = ap.user_id
-        WHERE u.updated_at < DATE_SUB(NOW(), INTERVAL 12 MONTH)
-        AND (u.last_reminder_sent_at IS NULL OR u.last_reminder_sent_at < DATE_SUB(NOW(), INTERVAL 13 MONTH))
+        WHERE (u.last_profile_update IS NULL OR u.last_profile_update < DATE_SUB(NOW(), INTERVAL 365 DAY))
         AND u.deleted_at IS NULL
-        ORDER BY u.updated_at ASC
+        ORDER BY u.last_profile_update ASC
     ");
     
     $stmt->execute();
@@ -86,8 +83,8 @@ try {
             $success = MailService::sendEmail($email, 'Bitte aktualisiere dein IBC Profil', $htmlBody);
             
             if ($success) {
-                // Update last_reminder_sent_at to prevent re-sending
-                $updateStmt = $userDb->prepare("UPDATE users SET last_reminder_sent_at = NOW() WHERE id = ?");
+                // Update last_profile_update to NOW() to prevent re-sending
+                $updateStmt = $userDb->prepare("UPDATE users SET last_profile_update = NOW() WHERE id = ?");
                 $updateStmt->execute([$userId]);
                 
                 $emailsSent++;

@@ -887,14 +887,35 @@ class AuthHandler {
             $_SESSION['authenticated'] = true;
             $_SESSION['last_activity'] = time();
             
-            // Check if profile is complete
-            $stmt = $db->prepare("SELECT profile_complete FROM users WHERE id = ?");
+            // Check if profile is complete and 2FA status
+            $stmt = $db->prepare("SELECT profile_complete, two_factor_enabled FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $userCheck = $stmt->fetch();
             if ($userCheck && intval($userCheck['profile_complete']) === 0) {
                 $_SESSION['profile_incomplete'] = true;
             } else {
                 $_SESSION['profile_incomplete'] = false;
+            }
+            
+            // Check if 2FA is enabled
+            if ($userCheck && intval($userCheck['two_factor_enabled']) === 1) {
+                // Store pending authentication state
+                $_SESSION['pending_2fa_user_id'] = $userId;
+                $_SESSION['pending_2fa_email'] = $email;
+                $_SESSION['pending_2fa_role'] = $roleName;
+                // Clear authenticated flag until 2FA is verified
+                unset($_SESSION['authenticated']);
+                unset($_SESSION['user_id']);
+                unset($_SESSION['user_email']);
+                unset($_SESSION['user_role']);
+                
+                // Log 2FA required
+                self::logSystemAction($userId, 'login_2fa_required', 'user', $userId, 'Microsoft login successful, 2FA verification required');
+                
+                // Redirect to 2FA verification page
+                $verify2faUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/auth/verify_2fa.php' : '/pages/auth/verify_2fa.php';
+                header('Location: ' . $verify2faUrl);
+                exit;
             }
             
             // Log successful login

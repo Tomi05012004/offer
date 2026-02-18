@@ -143,6 +143,20 @@ class MicrosoftGraphService {
     }
     
     /**
+     * Invite a guest user to Microsoft Entra ID
+     * Alias method for inviteUser with consistent naming
+     * 
+     * @param string $email User's email address
+     * @param string $name User's display name
+     * @param string $redirectUrl URL to redirect user after accepting invitation
+     * @return string User ID of the newly invited user
+     * @throws Exception If invitation fails
+     */
+    public function inviteGuest(string $email, string $name, string $redirectUrl): string {
+        return $this->inviteUser($email, $name, $redirectUrl);
+    }
+    
+    /**
      * Assign a role to a user
      * 
      * @param string $userId User ID (Object ID from Azure AD)

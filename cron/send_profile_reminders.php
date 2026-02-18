@@ -75,24 +75,15 @@ try {
         
         echo "Sending profile reminder to: {$fullName} ({$email})... ";
         
-        // Build email content
-        $subject = "Bitte aktualisiere dein IBC Profil";
-        
-        $bodyContent = '<p class="email-text">Hallo ' . htmlspecialchars($firstName) . ',</p>
-        <p class="email-text">Dein Profil wurde seit über einem Jahr nicht aktualisiert. 
-        Bitte prüfe, ob deine Daten noch aktuell sind, damit wir in Kontakt bleiben können.</p>
-        <p class="email-text">Bitte nimm dir einen Moment Zeit, um dein Profil zu überprüfen und bei Bedarf zu aktualisieren.</p>';
-        
         // Create call-to-action button with link to profile page
         $profileLink = BASE_URL . '/pages/auth/profile.php';
-        $callToAction = '<a href="' . htmlspecialchars($profileLink) . '" class="button">Profil aktualisieren</a>';
         
-        // Get complete HTML template
-        $htmlBody = MailService::getTemplate('Profil Aktualisierung', $bodyContent, $callToAction);
+        // Get complete HTML template using new method
+        $htmlBody = MailService::getProfileReminderEmailTemplate($firstName, $profileLink);
         
         // Send email using MailService
         try {
-            $success = MailService::sendEmail($email, $subject, $htmlBody);
+            $success = MailService::sendEmail($email, 'Bitte aktualisiere dein IBC Profil', $htmlBody);
             
             if ($success) {
                 // Update last_reminder_sent_at to prevent re-sending

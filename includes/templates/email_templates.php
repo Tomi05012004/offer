@@ -124,20 +124,22 @@ class EmailTemplates {
     }
     
     /**
-     * Get modern responsive birthday email template
+     * Get festive birthday email template with inline CSS
+     * HTML template with festive design ("Alles Gute zum Geburtstag")
+     * Uses inline CSS for maximum compatibility
      * 
-     * @param string $firstName User's first name
-     * @param string $gender User's gender (m/f)
+     * @param string $name User's name
+     * @param string $gender User's gender (m/f) - optional
      * @return string Complete HTML email
      */
-    public static function getBirthdayTemplate($firstName, $gender = '') {
+    public static function getBirthdayTemplate($name, $gender = '') {
         // Determine salutation
         if ($gender === 'f') {
-            $salutation = 'Liebe ' . htmlspecialchars($firstName);
+            $salutation = 'Liebe ' . htmlspecialchars($name);
         } elseif ($gender === 'm') {
-            $salutation = 'Lieber ' . htmlspecialchars($firstName);
+            $salutation = 'Lieber ' . htmlspecialchars($name);
         } else {
-            $salutation = 'Hallo ' . htmlspecialchars($firstName);
+            $salutation = 'Hallo ' . htmlspecialchars($name);
         }
         
         $content = '
@@ -322,13 +324,34 @@ class EmailTemplates {
     }
     
     /**
-     * Get profile reminder email template
+     * Get professional profile reminder email template
+     * Professional template ("Bitte aktualisieren Sie Ihre Daten...")
+     * Uses inline CSS for maximum compatibility
      * 
-     * @param string $firstName User's first name
-     * @param string $profileLink Link to profile page
+     * @param string $name User's name
+     * @param string $profileLink Link to profile page - optional
      * @return string Complete HTML email
      */
-    public static function getProfileReminderTemplate($firstName, $profileLink) {
+    public static function getProfileReminderTemplate($name, $profileLink = '') {
+        // Build button section only if profileLink is provided
+        $buttonSection = '';
+        if (!empty($profileLink)) {
+            $buttonSection = '
+            <tr>
+                <td align="center" style="padding: 30px 0;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #6cb73e 0%, #5a9933 100%); box-shadow: 0 4px 15px rgba(108, 183, 62, 0.3);">
+                                <a href="' . htmlspecialchars($profileLink) . '" target="_blank" style="display: inline-block; padding: 16px 42px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px;">
+                                    Profil aktualisieren
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>';
+        }
+        
         $content = '
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
             <tr>
@@ -346,7 +369,7 @@ class EmailTemplates {
             <tr>
                 <td>
                     <p style="margin: 0 0 16px; font-size: 16px; color: #333333; line-height: 1.6;">
-                        Hallo ' . htmlspecialchars($firstName) . ',
+                        Hallo ' . htmlspecialchars($name) . ',
                     </p>
                     <p style="margin: 0 0 16px; font-size: 16px; color: #333333; line-height: 1.6;">
                         dein Profil wurde seit über einem Jahr nicht aktualisiert. Um sicherzustellen, dass wir immer aktuelle Informationen haben und in Kontakt bleiben können, bitten wir dich, dein Profil zu überprüfen.
@@ -356,19 +379,7 @@ class EmailTemplates {
                     </p>
                 </td>
             </tr>
-            <tr>
-                <td align="center" style="padding: 30px 0;">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #6cb73e 0%, #5a9933 100%); box-shadow: 0 4px 15px rgba(108, 183, 62, 0.3);">
-                                <a href="' . htmlspecialchars($profileLink) . '" target="_blank" style="display: inline-block; padding: 16px 42px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px;">
-                                    Profil aktualisieren
-                                </a>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
+            ' . $buttonSection . '
             <tr>
                 <td>
                     <div style="padding: 20px; background-color: #f0fdf4; border-left: 4px solid #6cb73e; border-radius: 8px; margin-top: 20px;">

@@ -4,6 +4,7 @@
     /* Light Mode Variables - Source of Truth */
     --bg-body: #f9fafb; /* Light Gray */
     --bg-card: #ffffff; /* White */
+    --bg-input: #ffffff; /* White for input fields */
     --text-main: #111827; /* Almost Black - Important for readability */
     --text-muted: #4b5563; /* Dark Gray */
     --border-color: #e5e7eb;
@@ -12,6 +13,8 @@
     --gradient-card-light: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
     --gradient-hero-light: linear-gradient(135deg, #ffffff 0%, #f3f4f6 50%, #e5e7eb 100%);
     --gradient-subtle: linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 0.4) 100%);
+    --gradient-select: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    --gradient-select-hover: linear-gradient(to bottom, #ffffff 0%, #f0f7ff 100%);
     
     /* Legacy compatibility variables */
     --bg-color: #f9fafb; /* Light Gray */
@@ -27,6 +30,7 @@
     --ibc-blue: #0066b3;
     --ibc-blue-light: #3385c4;
     --ibc-blue-dark: #004f8c;
+    --ibc-blue-darker: #003d6b;
     --ibc-blue-hover: #005a9e;
     
     --ibc-accent: #ff6b35;
@@ -92,6 +96,7 @@
     --bg-body: #0a0f1e; /* Ultra Deep Dark - Enhanced from slate-900 */
     --bg-card: #1a1f2e; /* Rich Dark Slate - Warmer tone */
     --bg-card-elevated: #242938; /* Elevated cards for layering */
+    --bg-input: #0f1419; /* Ultra dark for input fields - maximum contrast */
     --text-main: #f8fafc; /* Ultra White - Maximum readability */
     --text-muted: #94a3b8; /* Slate-400 - Better muted text */
     --border-color: #334155; /* Slate-700 - More visible borders */
@@ -117,6 +122,14 @@
     /* Dark mode specific gradients */
     --gradient-hero-dark: linear-gradient(135deg, #1e3a5f 0%, #0f2847 50%, #0a1f3d 100%);
     --gradient-card-dark: linear-gradient(145deg, #1a1f2e 0%, #141822 100%);
+    --gradient-subtle: linear-gradient(180deg, rgba(10, 15, 30, 0) 0%, rgba(10, 15, 30, 0.4) 100%);
+    --gradient-select: linear-gradient(to bottom, #0f1419 0%, #141822 100%);
+    --gradient-select-hover: linear-gradient(to bottom, #141822 0%, #1a1f2e 100%);
+    
+    /* Dark mode specific shadows */
+    --shadow-glow-blue: 0 0 20px rgba(51, 133, 196, 0.25), 0 4px 12px rgba(51, 133, 196, 0.15);
+    --shadow-glow-green: 0 0 20px rgba(0, 166, 81, 0.3), 0 4px 12px rgba(0, 166, 81, 0.2);
+    --shadow-inner-glow: inset 0 2px 8px rgba(26, 31, 46, 0.8);
 }
 
 /* Force Overrides - The 'Hammer' to overwrite Tailwind defaults */
@@ -139,9 +152,9 @@ body {
 .dark-mode input,
 .dark-mode select,
 .dark-mode textarea {
-    background-color: #0f1419 !important; /* Ultra dark for maximum contrast */
-    color: #f8fafc !important; /* Ultra white text */
-    border: 1.5px solid #475569 !important; /* Stronger border - slate-600 */
+    background-color: var(--bg-input) !important; /* Ultra dark for maximum contrast */
+    color: var(--text-main) !important; /* Ultra white text */
+    border: 1.5px solid var(--border-light) !important; /* Stronger border */
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     transition: all 0.3s ease !important;
 }
@@ -156,7 +169,7 @@ body {
 
 .dark-mode input::placeholder,
 .dark-mode textarea::placeholder {
-    color: #64748b !important; /* Lighter muted text - slate-500 */
+    color: var(--text-muted) !important; /* Consistent with light mode */
     opacity: 1;
 }
 
@@ -172,7 +185,7 @@ body {
 
 /* Sidebar - Permanent Corporate Blue (IBC-Blau) for Light and Dark Mode */
 .sidebar {
-    background: linear-gradient(180deg, #004f8c 0%, var(--ibc-blue) 40%, #003d6b 100%) !important;
+    background: linear-gradient(180deg, var(--ibc-blue-dark) 0%, var(--ibc-blue) 40%, var(--ibc-blue-darker) 100%) !important;
 }
 
 /* Sidebar Text - Always White on Blue Background */
@@ -341,7 +354,7 @@ body.dark-mode td {
 input,
 select,
 textarea {
-    background-color: #ffffff; /* white */
+    background-color: var(--bg-input); /* Use CSS variable */
     color: var(--text-main);
     border-color: #d1d5db; /* gray-300 */
     transition: border-color 0.2s ease, background-color 0.2s ease;
@@ -350,7 +363,7 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-    color: var(--ibc-gray-400);
+    color: var(--text-muted); /* Better contrast - #4b5563 in light, #94a3b8 in dark */
 }
 
 input:disabled,
@@ -381,7 +394,7 @@ select {
     border-radius: var(--radius-md);
     
     /* Beautiful Gradient Background */
-    background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    background: var(--gradient-select);
     
     /* Custom Arrow Icon */
     background-image: var(--select-arrow-light);
@@ -409,7 +422,7 @@ select {
 /* Hover State - Gradient + Lift Animation + Enhanced Shadow */
 select:hover:not(:disabled) {
     border-color: var(--ibc-blue);
-    background: linear-gradient(to bottom, #ffffff 0%, #f0f7ff 100%);
+    background: var(--gradient-select-hover);
     box-shadow: 
         0 2px 4px rgba(0, 102, 179, 0.08),
         0 4px 8px rgba(0, 102, 179, 0.06),
@@ -451,9 +464,9 @@ select:disabled {
 
 /* Dark Mode Select Styling - Enhanced with Gradient + Arrow */
 .dark-mode select {
-    background: linear-gradient(to bottom, #0f1419 0%, #0a0e13 100%) !important;
-    border-color: #475569 !important;
-    color: #f8fafc !important;
+    background: var(--gradient-select) !important;
+    border-color: var(--border-light) !important;
+    color: var(--text-main) !important;
     /* Arrow icon - explicitly set with !important to ensure visibility across all states */
     background-image: var(--select-arrow-dark) !important;
     background-position: right 0.875rem center !important;
@@ -468,7 +481,7 @@ select:disabled {
 .dark-mode select:hover:not(:disabled) {
     border-color: var(--ibc-blue-light) !important;
     /* Must explicitly set both gradient and arrow to override base background */
-    background: linear-gradient(to bottom, #151b24 0%, #101419 100%) !important;
+    background: var(--gradient-select-hover) !important;
     background-image: var(--select-arrow-dark) !important;
     background-position: right 0.875rem center !important;
     background-repeat: no-repeat !important;
@@ -483,7 +496,7 @@ select:disabled {
 .dark-mode select:focus {
     border-color: var(--ibc-blue-light) !important;
     /* Must explicitly set both gradient and arrow to override base background */
-    background: #0f1419 !important;
+    background: var(--bg-input) !important;
     background-image: var(--select-arrow-dark) !important;
     background-position: right 0.875rem center !important;
     background-repeat: no-repeat !important;
@@ -513,8 +526,8 @@ select option {
 }
 
 .dark-mode select option {
-    background-color: #1a1f2e !important;
-    color: #f8fafc !important;
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
 }
 
 /* Multi-select Styling - Enhanced */
@@ -714,6 +727,10 @@ body.dark-mode .bg-gray-50 {
 
 body.dark-mode .bg-gray-100 {
     background-color: #374151 !important;
+}
+
+body.dark-mode .bg-gray-200 {
+    background-color: #475569 !important;
 }
 
 body.dark-mode .border-gray-200 {
@@ -1550,6 +1567,22 @@ body.dark-mode .bg-gray-300 {
 
 body.dark-mode .bg-gray-400 {
     background-color: #6b7280 !important;
+}
+
+body.dark-mode .bg-gray-500 {
+    background-color: #6b7280 !important;
+}
+
+body.dark-mode .bg-gray-600 {
+    background-color: #4b5563 !important;
+}
+
+body.dark-mode .bg-gray-700 {
+    background-color: #374151 !important;
+}
+
+body.dark-mode .bg-gray-800 {
+    background-color: #1f2937 !important;
 }
 
 body.dark-mode .hover\:bg-gray-400:hover {
@@ -3330,6 +3363,26 @@ body.dark-mode .btn-primary {
 body.dark-mode .btn-primary:hover {
     box-shadow: 0 8px 32px rgba(0, 166, 81, 0.5), 0 4px 16px rgba(0, 166, 81, 0.4);
     transform: translateY(-2px);
+}
+
+/* Dark Mode: Button ripple effect on click */
+body.dark-mode .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+body.dark-mode .btn-primary:active::after {
+    width: 300px;
+    height: 300px;
+    transition: width 0s, height 0s;
 }
 
 body.dark-mode .btn,

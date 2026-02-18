@@ -93,6 +93,12 @@ define('AZURE_CLIENT_SECRET', $env['AZURE_CLIENT_SECRET'] ?? '');
 define('AZURE_REDIRECT_URI', $env['AZURE_REDIRECT_URI'] ?? '');
 define('AZURE_TENANT_ID', $env['AZURE_TENANT_ID'] ?? '');
 
+// Backward compatibility aliases for Microsoft Entra settings
+define('TENANT_ID', AZURE_TENANT_ID);
+define('CLIENT_ID', AZURE_CLIENT_ID);
+define('CLIENT_SECRET', AZURE_CLIENT_SECRET);
+define('REDIRECT_URI', AZURE_REDIRECT_URI);
+
 /**
  * Sanitize HTTP_HOST to prevent injection attacks
  * Only allows alphanumeric characters, dots, colons, and hyphens
@@ -249,6 +255,19 @@ function init_session() {
         // Start the session with secure parameters
         session_start();
     }
+}
+
+/**
+ * Check if current page/path is active
+ * Helper function to determine if a given path is present in the current URI
+ * Used for navigation highlighting
+ * 
+ * @param string $path The path to check
+ * @return bool True if the path is found in current URI
+ */
+function isActivePath($path) {
+    $current = $_SERVER['REQUEST_URI'];
+    return strpos($current, $path) !== false;
 }
 
 // Role mapping from Azure groups/roles to internal role names

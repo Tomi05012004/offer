@@ -527,13 +527,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         $currentUser = Auth::user();
         $userRole = $currentUser['role'] ?? '';
         ?>
-        <?php 
-        // Helper function to determine if a path is active
-        function isActivePath($path) {
-            $currentUri = $_SERVER['REQUEST_URI'];
-            return strpos($currentUri, $path) !== false;
-        }
-        ?>
         <div class="p-5 flex-1 overflow-y-auto sidebar-scroll">
             <!-- IBC Logo in Navbar -->
             <div class="mb-6 px-3 pt-2">

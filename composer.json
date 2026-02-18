@@ -1,0 +1,9 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^7.0",
+        "thenetworg/oauth2-azure": "^2.2"
+    },
+    "config": {
+        "github-protocols": ["https", "git"]
+    }
+}

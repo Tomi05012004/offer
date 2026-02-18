@@ -1,0 +1,54 @@
+# ----------------------------------------------------------------------
+# 1. Basis-Einstellungen
+# ----------------------------------------------------------------------
+# Verhindert, dass Besucher Dateilisten sehen
+Options -Indexes
+
+# ----------------------------------------------------------------------
+# 2. Zugriffsschutz (Apache 2.4 kompatibel)
+# ----------------------------------------------------------------------
+
+# Versteckte Dateien (.env, .git) blockieren
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Kritische Dateien blockieren
+<FilesMatch "(^#.*#|\.(sql|md|log|json|lock|git|yml|yaml|twig)$|composer\.(json|lock))">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ----------------------------------------------------------------------
+# 3. Ordner-Schutz
+# ----------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Blockiere direkten Zugriff auf System-Ordner
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^vendor/ - [F,L]
+    RewriteRule ^src/ - [F,L]
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^sql/ - [F,L]
+</IfModule>
+
+# ----------------------------------------------------------------------
+# 4. Sicherheits-Header (Nur wenn Modul aktiv ist!)
+# ----------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

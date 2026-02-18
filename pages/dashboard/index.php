@@ -1,0 +1,550 @@
+<?php
+require_once __DIR__ . '/../../src/Auth.php';
+require_once __DIR__ . '/../../src/Database.php';
+require_once __DIR__ . '/../../includes/models/Inventory.php';
+require_once __DIR__ . '/../../includes/models/Event.php';
+require_once __DIR__ . '/../../includes/helpers.php';
+require_once __DIR__ . '/../../includes/poll_helpers.php';
+
+// Update event statuses (pseudo-cron)
+require_once __DIR__ . '/../../includes/pseudo_cron.php';
+
+// Check authentication
+if (!Auth::check()) {
+    header('Location: ../auth/login.php');
+    exit;
+}
+
+$currentUser = Auth::user();
+if (!$currentUser) {
+    Auth::logout();
+    header('Location: ../auth/login.php');
+    exit;
+}
+
+// Check if profile is complete - if not, redirect to profile edit page
+// Only enforce for roles that need profiles (not for test/system accounts)
+$rolesRequiringProfile = ['board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor', 'alumni', 'member', 'head', 'candidate', 'honorary_member'];
+if (in_array($currentUser['role'], $rolesRequiringProfile) && isset($currentUser['profile_complete']) && $currentUser['profile_complete'] == 0) {
+    $_SESSION['profile_incomplete_message'] = 'Bitte vervollständige dein Profil (Vorname und Nachname) um fortzufahren.';
+    header('Location: ../alumni/edit.php');
+    exit;
+}
+
+$user = $currentUser;
+$userRole = $user['role'] ?? '';
+$stats = Inventory::getDashboardStats();
+
+// Get user's name for personalized greeting
+$displayName = 'Benutzer'; // Default fallback
+if (!empty($user['firstname']) && !empty($user['lastname'])) {
+    $displayName = $user['firstname'] . ' ' . $user['lastname'];
+} elseif (!empty($user['firstname'])) {
+    $displayName = $user['firstname'];
+} elseif (!empty($user['email']) && strpos($user['email'], '@') !== false) {
+    $emailParts = explode('@', $user['email']);
+    $displayName = $emailParts[0];
+}
+
+// Determine greeting based on time of day (German time)
+$timezone = new DateTimeZone('Europe/Berlin');
+$now = new DateTime('now', $timezone);
+$hour = (int)$now->format('H');
+if ($hour >= 5 && $hour < 12) {
+    $greeting = 'Guten Morgen';
+} elseif ($hour >= 12 && $hour < 18) {
+    $greeting = 'Guten Tag';
+} else {
+    $greeting = 'Guten Abend';
+}
+
+// Get user's upcoming events
+$userUpcomingEvents = Event::getUserSignups($user['id']);
+$nextEvent = null;
+if (!empty($userUpcomingEvents)) {
+    // Filter for upcoming events only and get the next one
+    $upcomingEvents = array_filter($userUpcomingEvents, function($signup) {
+        return !empty($signup['start_time']) && strtotime($signup['start_time']) > time();
+    });
+    if (!empty($upcomingEvents)) {
+        // Sort by start_time
+        usort($upcomingEvents, function($a, $b) {
+            return strtotime($a['start_time']) - strtotime($b['start_time']);
+        });
+        $nextEvent = $upcomingEvents[0];
+    }
+}
+
+// Get user's open tasks from inventory rentals
+$userRentals = Inventory::getUserCheckouts($user['id'], false); // false = only unreturned items
+$openTasksCount = count($userRentals);
+
+// Get events that need helpers (for all users)
+$contentDb = Database::getContentDB();
+$helperEvents = [];
+try {
+    $stmt = $contentDb->query("
+        SELECT e.id, e.title, e.description, e.start_time, e.end_time, e.location
+        FROM events e
+        WHERE e.needs_helpers = 1
+        AND e.status IN ('open', 'planned')
+        AND e.end_time >= NOW()
+        ORDER BY e.start_time ASC
+        LIMIT 5
+    ");
+    $helperEvents = $stmt->fetchAll();
+} catch (PDOException $e) {
+    // If needs_helpers column doesn't exist yet, gracefully skip this section
+    // This can happen if update_database_schema.php hasn't been run yet
+    $errorMessage = $e->getMessage();
+    
+    // Check for column-not-found error using SQLSTATE code (42S22) for reliability
+    // Also check error message as fallback for different database systems
+    $isColumnError = (isset($e->errorInfo[0]) && $e->errorInfo[0] === '42S22') ||
+                     stripos($errorMessage, 'Unknown column') !== false ||
+                     stripos($errorMessage, 'Column not found') !== false;
+    
+    if (!$isColumnError) {
+        // For non-column errors, log and re-throw for proper error handling
+        error_log("Dashboard: Unexpected database error when fetching helper events: " . $errorMessage);
+        throw $e;
+    }
+    
+    // Column not found - continue with empty $helperEvents array
+    error_log("Dashboard: needs_helpers column not found in events table. Run update_database_schema.php to add it.");
+}
+
+// Security Audit - nur für Board/Head
+$securityWarning = '';
+if (Auth::isBoard() || Auth::hasRole('head')) {
+    require_once __DIR__ . '/../../security_audit.php';
+    $securityWarning = SecurityAudit::getDashboardWarning(__DIR__ . '/../..');
+}
+
+$title = 'Dashboard - IBC Intranet';
+ob_start();
+?>
+
+<?php if (!empty($user['prompt_profile_review']) && $user['prompt_profile_review'] == 1): ?>
+<!-- Profile Review Prompt Modal -->
+<div id="profile-review-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-user-edit text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Deine Rolle wurde geändert!</h3>
+            </div>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="px-6 py-6">
+            <p class="text-gray-700 text-lg mb-6">
+                Bitte überprüfe deine Daten (besonders E-Mail und Job-Daten), damit wir in Kontakt bleiben können.
+            </p>
+            
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-purple-600 mt-1 mr-3"></i>
+                    <p class="text-sm text-gray-700">
+                        Es ist wichtig, dass deine Kontaktdaten aktuell sind, damit du alle wichtigen Informationen erhältst.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-gray-50 flex flex-col sm:flex-row gap-3">
+            <a href="../auth/profile.php" class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <i class="fas fa-user-circle mr-2"></i>
+                Zum Profil
+            </a>
+            <button onclick="dismissProfileReviewPrompt()" class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300">
+                Später
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dismiss profile review prompt and update database
+function dismissProfileReviewPrompt() {
+    // Construct API path relative to web root
+    const baseUrl = window.location.origin;
+    const apiPath = baseUrl + '/api/dismiss_profile_review.php';
+    
+    // Make AJAX call to update database
+    fetch(apiPath, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide modal
+            document.getElementById('profile-review-modal').style.display = 'none';
+        } else {
+            console.error('Failed to dismiss prompt:', data.message);
+            // Hide modal anyway to prevent blocking user
+            document.getElementById('profile-review-modal').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Hide modal anyway to prevent blocking user
+        document.getElementById('profile-review-modal').style.display = 'none';
+    });
+}
+</script>
+<?php endif; ?>
+
+<?php if (!empty($securityWarning)): ?>
+<?php echo $securityWarning; ?>
+<?php endif; ?>
+
+<!-- Hero Section with Personalized Greeting -->
+<div class="mb-10">
+    <div class="max-w-4xl mx-auto">
+        <div class="hero-gradient relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-emerald-600 p-8 md:p-12 text-white shadow-xl">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoNnYtNmgtNnptMCAwdi02aC02djZoNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50"></div>
+            <div class="relative z-10">
+                <p class="text-blue-100 text-sm font-medium uppercase tracking-wider mb-2 hero-date">
+                    <i class="fas fa-sun mr-1"></i> <?php
+                        $germanMonths = [1=>'Januar',2=>'Februar',3=>'März',4=>'April',5=>'Mai',6=>'Juni',7=>'Juli',8=>'August',9=>'September',10=>'Oktober',11=>'November',12=>'Dezember'];
+                        $monthNum = (int)date('n');
+                        echo date('d') . '. ' . ($germanMonths[$monthNum] ?? '') . ' ' . date('Y');
+                    ?>
+                </p>
+                <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight hero-title">
+                    <?php echo htmlspecialchars($greeting); ?>, <?php echo htmlspecialchars($displayName); ?>! 👋
+                </h1>
+                <p class="text-lg text-blue-100 font-medium hero-subtitle">
+                    Willkommen zurück im IBC Intranet
+                </p>
+            </div>
+            <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="absolute -top-6 -left-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-xl"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Widgets -->
+<div class="max-w-6xl mx-auto mb-10">
+    <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mr-3 shadow-md">
+            <i class="fas fa-tachometer-alt text-white text-sm"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Schnellübersicht</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- My Open Tasks Widget -->
+        <a href="/pages/inventory/my_rentals.php" class="block group">
+            <div class="card p-7 rounded-2xl bg-gradient-to-br from-white to-orange-50/50 hover:shadow-2xl transition-all duration-300 cursor-pointer border border-orange-100/50">
+                <div class="mb-5">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-orange-500 mb-3">Ausleihen</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Meine offenen Ausleihen</h3>
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform duration-300">
+                            <span class="text-4xl font-bold text-white"><?php echo $openTasksCount; ?></span>
+                        </div>
+                    </div>
+                </div>
+                <?php if ($openTasksCount > 0): ?>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium mb-4"><?php echo $openTasksCount; ?> offene <?php echo $openTasksCount == 1 ? 'Ausleihe' : 'Ausleihen'; ?></p>
+                    <span class="inline-flex items-center text-orange-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
+                        Ausleihen verwalten <i class="fas fa-arrow-right ml-2"></i>
+                    </span>
+                </div>
+                <?php else: ?>
+                <div class="text-center space-y-3">
+                    <p class="text-gray-700 font-medium text-base">Keine offenen Ausleihen</p>
+                    <div class="pt-3 border-t border-orange-100">
+                        <p class="text-sm text-gray-600 flex items-center justify-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            Alle Artikel wurden zurückgegeben
+                        </p>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </a>
+
+        <!-- Next Event Widget -->
+        <div class="card p-7 rounded-2xl bg-gradient-to-br from-white to-blue-50/50 hover:shadow-2xl transition-all duration-300 border border-blue-100/50">
+            <div class="mb-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-3">Events</p>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Nächstes Event</h3>
+            </div>
+            <?php if ($nextEvent): ?>
+            <div class="space-y-3">
+                <h4 class="font-semibold text-gray-800 text-lg"><?php echo htmlspecialchars($nextEvent['title']); ?></h4>
+                <p class="text-gray-600">
+                    <i class="fas fa-clock mr-2 text-blue-400"></i>
+                    <?php echo date('d.m.Y H:i', strtotime($nextEvent['start_time'])); ?> Uhr
+                </p>
+                <div class="pt-3">
+                    <a href="../events/view.php?id=<?php echo $nextEvent['event_id']; ?>" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold text-sm hover:translate-x-1 transition-transform">
+                        Details ansehen <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            <?php else: ?>
+            <div class="space-y-4">
+                <p class="text-gray-700 font-medium text-base">Keine anstehenden Events</p>
+                <div class="pt-3">
+                    <a href="../events/index.php" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold text-sm hover:translate-x-1 transition-transform">
+                        Events durchsuchen <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Section - Wir suchen Helfer -->
+<div class="max-w-6xl mx-auto mb-12">
+    <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mr-3 shadow-md">
+            <i class="fas fa-hands-helping text-white text-sm"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Wir suchen Helfer</h2>
+    </div>
+    
+    <?php if (!empty($helperEvents)): ?>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <?php foreach ($helperEvents as $event): ?>
+        <div class="card p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white to-green-50/60 border-l-4 border-green-500">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">
+                    <i class="fas fa-calendar-alt text-green-600 mr-2"></i>
+                    <?php echo htmlspecialchars($event['title']); ?>
+                </h3>
+                <?php if (!empty($event['description'])): ?>
+                <p class="text-sm text-gray-600 mb-2">
+                    <?php echo htmlspecialchars(substr($event['description'], 0, 100)) . (strlen($event['description']) > 100 ? '...' : ''); ?>
+                </p>
+                <?php endif; ?>
+            </div>
+            <div class="text-sm text-gray-600 mb-3">
+                <div class="flex items-center mb-1">
+                    <i class="fas fa-clock mr-2 text-green-600"></i>
+                    <?php echo date('d.m.Y H:i', strtotime($event['start_time'])); ?> Uhr
+                </div>
+                <?php if (!empty($event['location'])): ?>
+                <div class="flex items-center">
+                    <i class="fas fa-map-marker-alt mr-2 text-green-600"></i>
+                    <?php echo htmlspecialchars($event['location']); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <a href="../events/view.php?id=<?php echo $event['id']; ?>" 
+               class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-semibold">
+                Mehr erfahren <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php else: ?>
+    <div class="card p-8 rounded-xl shadow-lg text-center bg-gradient-to-br from-white to-gray-50">
+        <i class="fas fa-hands-helping text-4xl mb-3 text-gray-400"></i>
+        <p class="text-gray-600 text-lg">Aktuell werden keine Helfer gesucht</p>
+        <a href="../events/index.php" class="inline-flex items-center mt-4 text-green-600 hover:text-green-700 font-semibold">
+            Alle Events ansehen <i class="fas fa-arrow-right ml-2"></i>
+        </a>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- Polls Widget Section -->
+<div class="max-w-6xl mx-auto mb-12">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-3 shadow-md">
+                <i class="fas fa-poll text-white text-sm"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Aktuelle Umfragen</h2>
+        </div>
+        <a href="../polls/index.php" class="text-orange-600 hover:text-orange-700 font-semibold text-sm">
+            Alle Umfragen <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    
+    <?php
+    // Fetch active polls for the user
+    $userAzureRoles = isset($user['azure_roles']) ? json_decode($user['azure_roles'], true) : [];
+    
+    $pollStmt = $contentDb->prepare("
+        SELECT p.*, 
+               (SELECT COUNT(*) FROM poll_votes WHERE poll_id = p.id AND user_id = ?) as user_has_voted,
+               (SELECT COUNT(*) FROM poll_hidden_by_user WHERE poll_id = p.id AND user_id = ?) as user_has_hidden
+        FROM polls p
+        WHERE p.is_active = 1 AND p.end_date > NOW()
+        ORDER BY p.created_at DESC
+        LIMIT 5
+    ");
+    $pollStmt->execute([$user['id'], $user['id']]);
+    $allPolls = $pollStmt->fetchAll();
+    
+    // Filter polls using shared helper function
+    $visiblePolls = filterPollsForUser($allPolls, $userRole, $userAzureRoles);
+    
+    if (!empty($visiblePolls)): 
+    ?>
+    <div class="grid grid-cols-1 gap-4">
+        <?php foreach ($visiblePolls as $poll): ?>
+        <div class="card p-5 rounded-xl shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-white to-orange-50/30">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <h3 class="font-bold text-gray-800 text-lg mb-2">
+                        <i class="fas fa-poll-h text-orange-500 mr-2"></i>
+                        <?php echo htmlspecialchars($poll['title']); ?>
+                    </h3>
+                    <?php if (!empty($poll['description'])): ?>
+                    <p class="text-sm text-gray-600 mb-3">
+                        <?php echo htmlspecialchars(substr($poll['description'], 0, 150)) . (strlen($poll['description']) > 150 ? '...' : ''); ?>
+                    </p>
+                    <?php endif; ?>
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-clock mr-1"></i>
+                        Endet am <?php echo date('d.m.Y', strtotime($poll['end_date'])); ?>
+                    </p>
+                </div>
+                <div class="ml-4 flex flex-col gap-2">
+                    <?php if (!empty($poll['microsoft_forms_url'])): ?>
+                    <!-- Microsoft Forms Link -->
+                    <a 
+                        href="<?php echo htmlspecialchars($poll['microsoft_forms_url']); ?>"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all text-sm font-semibold whitespace-nowrap"
+                    >
+                        <i class="fas fa-external-link-alt mr-1"></i>Zur Umfrage
+                    </a>
+                    <button 
+                        onclick="hidePollFromDashboard(<?php echo $poll['id']; ?>)"
+                        class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all text-xs font-semibold whitespace-nowrap"
+                    >
+                        <i class="fas fa-eye-slash mr-1"></i>Erledigt / Ausblenden
+                    </button>
+                    <?php else: ?>
+                    <!-- Internal Poll -->
+                    <a 
+                        href="../polls/view.php?id=<?php echo $poll['id']; ?>"
+                        class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all text-sm font-semibold whitespace-nowrap"
+                    >
+                        <?php if ($poll['user_has_voted'] > 0): ?>
+                            <i class="fas fa-chart-bar mr-1"></i>Ergebnisse
+                        <?php else: ?>
+                            <i class="fas fa-vote-yea mr-1"></i>Abstimmen
+                        <?php endif; ?>
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php else: ?>
+    <div class="card p-6 rounded-xl shadow-md text-center bg-gradient-to-br from-white to-gray-50">
+        <i class="fas fa-poll text-3xl mb-2 text-gray-400"></i>
+        <p class="text-gray-600">Keine aktiven Umfragen für Sie verfügbar</p>
+    </div>
+    <?php endif; ?>
+</div>
+
+<script>
+function hidePollFromDashboard(pollId) {
+    if (!confirm('Möchten Sie diese Umfrage wirklich ausblenden?')) {
+        return;
+    }
+    
+    fetch('<?php echo asset('api/hide_poll.php'); ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ poll_id: pollId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to update the dashboard
+            window.location.reload();
+        } else {
+            alert('Fehler: ' + (data.message || 'Unbekannter Fehler'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+    });
+}
+</script>
+
+<!-- Upcoming Events Section - Visible to All Users -->
+<div class="max-w-6xl mx-auto mb-12">
+    <div class="flex items-center justify-center mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mr-3 shadow-md">
+            <i class="fas fa-calendar-alt text-white text-sm"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Anstehende Events</h2>
+    </div>
+    
+    <div class="grid grid-cols-1 gap-6">
+        <?php 
+        // Get upcoming events (upcoming status, ordered by start time)
+        $upcomingEventsForAllUsers = Event::getEvents([
+            'status' => ['upcoming', 'registration_open'],
+            'start_date' => date('Y-m-d H:i:s')
+        ], $user['role']);
+        
+        // Limit to 5 events
+        $upcomingEventsForAllUsers = array_slice($upcomingEventsForAllUsers, 0, 5);
+        
+        if (!empty($upcomingEventsForAllUsers)): 
+        ?>
+        <div class="card p-6 rounded-xl shadow-lg bg-gradient-to-br from-white to-blue-50">
+            <div class="space-y-4">
+                <?php foreach ($upcomingEventsForAllUsers as $event): ?>
+                <div class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-800 mb-1"><?php echo htmlspecialchars($event['title']); ?></h3>
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-clock mr-1"></i>
+                            <?php echo date('d.m.Y H:i', strtotime($event['start_time'])); ?> Uhr
+                        </p>
+                        <?php if (!empty($event['location'])): ?>
+                        <p class="text-sm text-gray-500 mt-1">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            <?php echo htmlspecialchars($event['location']); ?>
+                        </p>
+                        <?php endif; ?>
+                    </div>
+                    <a href="../events/view.php?id=<?php echo $event['id']; ?>" class="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                        Details
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="card p-8 rounded-xl shadow-lg text-center bg-gradient-to-br from-white to-gray-50">
+            <i class="fas fa-calendar-times text-4xl mb-3 text-gray-400"></i>
+            <p class="text-gray-600 text-lg">Keine anstehenden Events</p>
+            <a href="../events/index.php" class="inline-flex items-center mt-4 text-blue-600 hover:text-blue-700 font-semibold">
+                Alle Events ansehen <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php
+$content = ob_get_clean();
+include __DIR__ . '/../../includes/templates/main_layout.php';

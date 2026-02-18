@@ -523,7 +523,10 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-72 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col">
-        <?php $currentUser = Auth::user(); ?>
+        <?php 
+        $currentUser = Auth::user();
+        $userRole = $currentUser['role'] ?? '';
+        ?>
         <?php 
         // Helper function to determine if a path is active
         function isActivePath($path) {
@@ -733,10 +736,8 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <?php endif; ?>
 
                 <!-- Nützliche Links (Board roles + alumni_board + alumni_auditor) -->
-                <?php 
-                $userRole = $currentUser['role'] ?? '';
-                if (in_array($userRole, ['board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor'])): 
-                ?>
+                <!-- NOTE: The target page /pages/links/index.php does not exist yet and will result in a 404 -->
+                <?php if (in_array($userRole, ['board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor'])): ?>
                 <a href="<?php echo asset('pages/links/index.php'); ?>" 
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/links/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-link w-5 mr-3"></i>

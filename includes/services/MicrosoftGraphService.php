@@ -250,7 +250,7 @@ class MicrosoftGraphService {
             ];
             
             // Get transitive group memberships (includes nested groups)
-            $groupsUrl = "https://graph.microsoft.com/v1.0/users/{$userId}/transitiveMemberOf";
+            $groupsUrl = "https://graph.microsoft.com/v1.0/users/{$userId}/transitiveMemberOf?\$select=id,displayName";
             
             try {
                 $groupsResponse = $this->httpClient->get($groupsUrl, [
@@ -262,11 +262,14 @@ class MicrosoftGraphService {
                 
                 $groupsData = json_decode($groupsResponse->getBody()->getContents(), true);
                 
-                // Extract group display names from the response
+                // Extract group id and displayName from the response
                 if (isset($groupsData['value']) && is_array($groupsData['value'])) {
                     foreach ($groupsData['value'] as $group) {
-                        if (isset($group['displayName'])) {
-                            $result['groups'][] = $group['displayName'];
+                        if (isset($group['id']) && isset($group['displayName'])) {
+                            $result['groups'][] = [
+                                'id' => $group['id'],
+                                'displayName' => $group['displayName']
+                            ];
                         }
                     }
                 }

@@ -209,3 +209,20 @@ function isAlumniRole($role) {
     return in_array($role, ['alumni', 'alumni_board', 'honorary_member']);
 }
 
+/**
+ * Extract display names from group objects
+ * Groups can be either strings (legacy format) or objects with id and displayName
+ * 
+ * @param array $groups Array of groups (can be strings or objects)
+ * @return array Array of display names
+ */
+function extractGroupDisplayNames($groups) {
+    if (!is_array($groups)) {
+        return [];
+    }
+    
+    return array_filter(array_map(function($group) {
+        return is_array($group) && isset($group['displayName']) ? $group['displayName'] : $group;
+    }, $groups));
+}
+

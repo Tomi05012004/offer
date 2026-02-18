@@ -780,14 +780,16 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                     // No translation needed unlike azure_roles which use internal lowercase format
                     $rolesArray = json_decode($currentUser['entra_roles'], true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($rolesArray)) {
-                        $displayRoles = array_filter($rolesArray);
+                        // Extract displayName from each group object (groups now contain both id and displayName)
+                        $displayRoles = extractGroupDisplayNames($rolesArray);
                     } else {
                         error_log("Failed to decode entra_roles in main_layout for user ID " . intval($currentUser['id']) . ": " . json_last_error_msg());
                     }
                 } elseif (!empty($_SESSION['entra_roles'])) {
                     // Prefer entra_roles from session (groups from Microsoft Graph)
                     if (is_array($_SESSION['entra_roles'])) {
-                        $displayRoles = array_filter($_SESSION['entra_roles']);
+                        // Extract displayName from each group object (groups now contain both id and displayName)
+                        $displayRoles = extractGroupDisplayNames($_SESSION['entra_roles']);
                     }
                 } elseif (!empty($_SESSION['azure_roles'])) {
                     // Check session variable as alternative (App Roles from JWT)

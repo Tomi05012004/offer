@@ -5,6 +5,13 @@
 -- including: Users, Authentication, Events, Projects, 
 -- Blog, Inventory, Polls, Alumni, Invoices, Links, Mail Queue
 -- ================================================
+-- 
+-- NOTE: Some tables contain duplicate column names (e.g., tfa_secret 
+-- and two_factor_secret) to maintain backward compatibility with 
+-- existing code while also supporting newer naming conventions.
+-- These duplicate columns serve the same purpose and should be 
+-- kept in sync if both are used.
+-- ================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;

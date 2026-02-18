@@ -542,47 +542,49 @@ class AuthHandler {
                 }
             }
             
-            // Define role mapping from Azure roles/groups (string) to internal role names (string)
+            // Define role mapping from Azure group IDs to internal role names
             // This mapping works for both:
             // 1. App Roles from JWT token (roles claim)
-            // 2. Group display names from Microsoft Entra (Graph API)
-            // Azure roles/groups should not contain umlauts for technical compatibility
+            // 2. Group IDs from Microsoft Entra (Graph API)
             // 
-            // Note: Duplicate mappings for different cases (lowercase, Capitalized) are intentional
-            // to provide explicit documentation of all supported formats from Azure.
-            // The fallback logic (lines ~607-615) also checks lowercase versions as a safety net.
-            // 
-            // Supported formats:
-            // - lowercase with underscore: vorstand_finanzen, vorstand_intern
-            // - Capitalized with underscore: Vorstand_Finanzen, Vorstand_Intern
-            // - Capitalized with space: Vorstand Finanzen, Vorstand Intern
-            // - Simple names: Vorstand -> board_internal (default board role)
+            // Microsoft Entra Group IDs are used as keys for precise role mapping
             $roleMapping = [
-                // Lowercase versions (for App Roles)
+                // Microsoft Entra Group IDs (exact mapping)
+                '3ad43a76-75af-48a7-9974-7a2cf350f349' => 'board_finance',   // Vorstand Finanzen und Recht
+                'f61e99e2-2717-4aff-b3f5-ef2ec489b598' => 'board_internal',  // Vorstand Intern
+                'bf17e26b-e5f1-4a63-ae56-91ab69ae33ca' => 'board_external',  // Vorstand Extern
+                '8a45c6aa-e791-422e-b964-986d8bdd2ed8' => 'alumni_board',    // Alumni-Vorstand
+                '39597941-0a22-4922-9587-e3d62ab986d6' => 'alumni_auditor',  // Alumni-Finanzprüfer
+                '7ffd9c73-a828-4e34-a9f4-10f4ed00f796' => 'alumni',          // Alumni
+                '09686b92-dbc8-4e66-a851-2dafea64df89' => 'honorary_member', // Ehrenmitglied
+                '9456552d-0f49-42ff-bbde-495a60e61e61' => 'head',            // Ressortleiter
+                '70f07477-ea4e-4edc-b0e6-7e25968f16c0' => 'member',          // Mitglied
+                '75edcb0a-c610-4ceb-82f2-457a9dde4fc0' => 'candidate',       // Anwärter
+                // Lowercase versions (for App Roles - backward compatibility)
                 'anwaerter' => 'candidate',
                 'mitglied' => 'member',
                 'ressortleiter' => 'head',
                 'vorstand_finanzen' => 'board_finance',
                 'vorstand_intern' => 'board_internal',
                 'vorstand_extern' => 'board_external',
-                'vorstand' => 'board_internal', // Default board role if no specific board type
+                'vorstand' => 'board_internal',
                 'alumni' => 'alumni',
                 'alumni_vorstand' => 'alumni_board',
                 'alumni_finanz' => 'alumni_auditor',
                 'ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with underscore (for Group display names)
+                // Capitalized versions with underscore (for Group display names - backward compatibility)
                 'Anwaerter' => 'candidate',
                 'Mitglied' => 'member',
                 'Ressortleiter' => 'head',
                 'Vorstand_Finanzen' => 'board_finance',
                 'Vorstand_Intern' => 'board_internal',
                 'Vorstand_Extern' => 'board_external',
-                'Vorstand' => 'board_internal', // Default board role if no specific board type
+                'Vorstand' => 'board_internal',
                 'Alumni' => 'alumni',
                 'Alumni_Vorstand' => 'alumni_board',
                 'Alumni_Finanz' => 'alumni_auditor',
                 'Ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with space (alternative Group display names)
+                // Capitalized versions with space (alternative Group display names - backward compatibility)
                 'Vorstand Finanzen' => 'board_finance',
                 'Vorstand Intern' => 'board_internal',
                 'Vorstand Extern' => 'board_external',

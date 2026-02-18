@@ -542,53 +542,48 @@ class AuthHandler {
                 }
             }
             
-            // Define role mapping from Azure roles/groups (string) to internal role names (string)
+            // Define role mapping from Azure group IDs to internal role names
             // This mapping works for both:
             // 1. App Roles from JWT token (roles claim)
-            // 2. Group display names from Microsoft Entra (Graph API)
-            // Azure roles/groups should not contain umlauts for technical compatibility
+            // 2. Group IDs from Microsoft Entra (Graph API)
             // 
-            // Note: Duplicate mappings for different cases (lowercase, Capitalized) are intentional
-            // to provide explicit documentation of all supported formats from Azure.
-            // The fallback logic (lines ~607-615) also checks lowercase versions as a safety net.
-            // 
-            // Supported formats:
-            // - lowercase with underscore: vorstand_finanzen, vorstand_intern
-            // - Capitalized with underscore: Vorstand_Finanzen, Vorstand_Intern
-            // - Capitalized with space: Vorstand Finanzen, Vorstand Intern
-            // - Simple names: Vorstand -> board_internal (default board role)
-            $roleMapping = [
-                // Lowercase versions (for App Roles)
+            // Start with Microsoft Entra Group IDs from global ROLE_MAPPING constant
+            // Flip the mapping so Group IDs become keys and internal role names become values
+            $roleMapping = array_flip(ROLE_MAPPING);
+            
+            // Add backward compatibility mappings for App Roles and display names
+            $roleMapping = array_merge($roleMapping, [
+                // Lowercase versions (for App Roles - backward compatibility)
                 'anwaerter' => 'candidate',
                 'mitglied' => 'member',
                 'ressortleiter' => 'head',
                 'vorstand_finanzen' => 'board_finance',
                 'vorstand_intern' => 'board_internal',
                 'vorstand_extern' => 'board_external',
-                'vorstand' => 'board_internal', // Default board role if no specific board type
+                'vorstand' => 'board_internal',
                 'alumni' => 'alumni',
                 'alumni_vorstand' => 'alumni_board',
                 'alumni_finanz' => 'alumni_auditor',
                 'ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with underscore (for Group display names)
+                // Capitalized versions with underscore (for Group display names - backward compatibility)
                 'Anwaerter' => 'candidate',
                 'Mitglied' => 'member',
                 'Ressortleiter' => 'head',
                 'Vorstand_Finanzen' => 'board_finance',
                 'Vorstand_Intern' => 'board_internal',
                 'Vorstand_Extern' => 'board_external',
-                'Vorstand' => 'board_internal', // Default board role if no specific board type
+                'Vorstand' => 'board_internal',
                 'Alumni' => 'alumni',
                 'Alumni_Vorstand' => 'alumni_board',
                 'Alumni_Finanz' => 'alumni_auditor',
                 'Ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with space (alternative Group display names)
+                // Capitalized versions with space (alternative Group display names - backward compatibility)
                 'Vorstand Finanzen' => 'board_finance',
                 'Vorstand Intern' => 'board_internal',
                 'Vorstand Extern' => 'board_external',
                 'Alumni Vorstand' => 'alumni_board',
                 'Alumni Finanz' => 'alumni_auditor'
-            ];
+            ]);
             
             // Debug logging for expected role keys
             error_log('DEBUG ENTRA - Erwartete Rollen-Keys: ' . print_r(array_keys($roleMapping), true));

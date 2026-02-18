@@ -253,38 +253,18 @@ function init_session() {
 
 // Role mapping from Azure groups/roles to internal role names
 // This mapping is used for Microsoft Entra ID authentication
-// Supports both App Roles (from JWT token) and Group display names (from Microsoft Graph API)
+// Supports both App Roles (from JWT token) and Group IDs (from Microsoft Entra)
 define('ROLE_MAPPING', [
-    // Lowercase versions (for App Roles)
-    'anwaerter' => 'candidate',
-    'mitglied' => 'member',
-    'ressortleiter' => 'head',
-    'vorstand_finanzen' => 'board_finance',
-    'vorstand_intern' => 'board_internal',
-    'vorstand_extern' => 'board_external',
-    'vorstand' => 'board_internal',
-    'alumni' => 'alumni',
-    'alumni_vorstand' => 'alumni_board',
-    'alumni_finanz' => 'alumni_auditor',
-    'ehrenmitglied' => 'honorary_member',
-    // Capitalized versions with underscore (for Group display names)
-    'Anwaerter' => 'candidate',
-    'Mitglied' => 'member',
-    'Ressortleiter' => 'head',
-    'Vorstand_Finanzen' => 'board_finance',
-    'Vorstand_Intern' => 'board_internal',
-    'Vorstand_Extern' => 'board_external',
-    'Vorstand' => 'board_internal',
-    'Alumni' => 'alumni',
-    'Alumni_Vorstand' => 'alumni_board',
-    'Alumni_Finanz' => 'alumni_auditor',
-    'Ehrenmitglied' => 'honorary_member',
-    // Capitalized versions with space (alternative Group display names)
-    'Vorstand Finanzen' => 'board_finance',
-    'Vorstand Intern' => 'board_internal',
-    'Vorstand Extern' => 'board_external',
-    'Alumni Vorstand' => 'alumni_board',
-    'Alumni Finanz' => 'alumni_auditor'
+    'board_finance'   => '3ad43a76-75af-48a7-9974-7a2cf350f349', // Vorstand Finanzen und Recht
+    'board_internal'  => 'f61e99e2-2717-4aff-b3f5-ef2ec489b598', // Vorstand Intern
+    'board_external'  => 'bf17e26b-e5f1-4a63-ae56-91ab69ae33ca', // Vorstand Extern
+    'alumni_board'    => '8a45c6aa-e791-422e-b964-986d8bdd2ed8', // Alumni-Vorstand
+    'alumni_auditor'  => '39597941-0a22-4922-9587-e3d62ab986d6', // Alumni-Finanzprüfer
+    'alumni'          => '7ffd9c73-a828-4e34-a9f4-10f4ed00f796', // Alumni
+    'honorary_member' => '09686b92-dbc8-4e66-a851-2dafea64df89', // Ehrenmitglied
+    'head'            => '9456552d-0f49-42ff-bbde-495a60e61e61', // Ressortleiter
+    'member'          => '70f07477-ea4e-4edc-b0e6-7e25968f16c0', // Mitglied
+    'candidate'       => '75edcb0a-c610-4ceb-82f2-457a9dde4fc0'  // Anwärter
 ]);
 
 // Load helper functions globally

@@ -526,7 +526,6 @@ class AuthHandler {
                     // Get user profile (includes groups)
                     $profileData = $graphService->getUserProfile($azureOid);
                     $entraGroups = $profileData['groups'] ?? [];
-                    error_log("DEBUG ENTRA GROUPS: " . print_r($entraGroups, true));
                     
                     // Debug logging for role matching
                     error_log('DEBUG ENTRA - Gefundene Gruppen (Raw): ' . print_r($entraGroups, true));

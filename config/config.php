@@ -266,7 +266,19 @@ function init_session() {
  * @return bool True if the path is found in current URI
  */
 function isActivePath($path) {
-    $current = $_SERVER['REQUEST_URI'];
+    // Get the current URI, defaulting to empty string if not set
+    $current = $_SERVER['REQUEST_URI'] ?? '';
+    
+    // Remove query string if present for cleaner matching
+    $current = strtok($current, '?');
+    
+    // Sanitize both paths to prevent injection issues
+    $current = htmlspecialchars($current, ENT_QUOTES, 'UTF-8');
+    $path = htmlspecialchars($path, ENT_QUOTES, 'UTF-8');
+    
+    // Use strpos for substring matching (as per original implementation)
+    // Note: This is intentionally using strpos to match any occurrence of the path
+    // This allows flexible matching like '/admin/' matching '/admin/users.php'
     return strpos($current, $path) !== false;
 }
 

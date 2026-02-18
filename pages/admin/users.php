@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token = Auth::generateInvitationToken($email, $role, $_SESSION['user_id'], $validityHours);
             $inviteLink = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/pages/auth/register.php?token=' . $token;
             
-            // For Alumni users, also send Microsoft Entra invitation
-            if (in_array($role, ['alumni', 'alumni_vorstand', 'alumni_finanz'])) {
+            // For Alumni, Member and Candidate users, also send Microsoft Entra invitation
+            if (in_array($role, ['alumni', 'member', 'candidate'])) {
                 try {
                     require_once __DIR__ . '/../../includes/services/MicrosoftGraphService.php';
                     

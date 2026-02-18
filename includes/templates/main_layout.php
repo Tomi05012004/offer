@@ -3,6 +3,9 @@ require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../../src/Auth.php';
 require_once __DIR__ . '/../handlers/AuthHandler.php';
 
+// DEBUG: Uncomment to force role for testing
+// $_SESSION['user_role'] = 'board_finance';
+
 // Check if profile is incomplete and redirect to profile page (unless already on profile page)
 if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profile_incomplete'] === true) {
     $currentPage = basename($_SERVER['PHP_SELF']);
@@ -520,7 +523,10 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
 
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-72 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col">
-        <?php $currentUser = Auth::user(); ?>
+        <?php 
+        $currentUser = Auth::user();
+        $userRole = $currentUser['role'] ?? '';
+        ?>
         <?php 
         // Helper function to determine if a path is active
         function isActivePath($path) {
@@ -667,6 +673,15 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 </a>
                 <?php endif; ?>
 
+                <!-- Nützliche Links (Board + Alumni Board + Alumni Auditor) -->
+                <?php if (in_array($userRole, ['board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor'])): ?>
+                <a href="<?php echo asset('pages/links/index.php'); ?>" 
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/links/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                    <i class="fas fa-link w-5 mr-3"></i>
+                    <span>Nützliche Links</span>
+                </a>
+                <?php endif; ?>
+
                 <!-- Admin Section Divider -->
                 <?php if (Auth::canManageUsers() || Auth::isAdmin()): ?>
                 <div class="my-3 mx-4">
@@ -726,6 +741,15 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/settings.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-cogs w-5 mr-3"></i>
                     <span>Systemeinstellungen</span>
+                </a>
+                <?php endif; ?>
+
+                <!-- Einladungen (Board finance, internal, external only) -->
+                <?php if (in_array($userRole, ['board_finance', 'board_internal', 'board_external'])): ?>
+                <a href="<?php echo asset('pages/admin/bulk_invite.php'); ?>" 
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/bulk_invite.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                    <i class="fas fa-envelope w-5 mr-3"></i>
+                    <span>Einladungen</span>
                 </a>
                 <?php endif; ?>
                 

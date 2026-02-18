@@ -3845,7 +3845,7 @@ body:not(.dark-mode) .hero-gradient .hero-date {
 
 /* --- SIDEBAR FIXES (Immer dunkel, Schrift immer weiß) --- */
 .sidebar {
-    background-color: var(--ibc-blue) !important; /* Dein Dunkelblau */
+    background-color: var(--ibc-blue) !important; /* Dein Dunkelblau - defined at line 30 */
     color: #ffffff !important;
 }
 .sidebar a, .sidebar i, .sidebar span {

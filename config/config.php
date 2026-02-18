@@ -251,5 +251,41 @@ function init_session() {
     }
 }
 
+// Role mapping from Azure groups/roles to internal role names
+// This mapping is used for Microsoft Entra ID authentication
+// Supports both App Roles (from JWT token) and Group display names (from Microsoft Graph API)
+define('ROLE_MAPPING', [
+    // Lowercase versions (for App Roles)
+    'anwaerter' => 'candidate',
+    'mitglied' => 'member',
+    'ressortleiter' => 'head',
+    'vorstand_finanzen' => 'board_finance',
+    'vorstand_intern' => 'board_internal',
+    'vorstand_extern' => 'board_external',
+    'vorstand' => 'board_internal',
+    'alumni' => 'alumni',
+    'alumni_vorstand' => 'alumni_board',
+    'alumni_finanz' => 'alumni_auditor',
+    'ehrenmitglied' => 'honorary_member',
+    // Capitalized versions with underscore (for Group display names)
+    'Anwaerter' => 'candidate',
+    'Mitglied' => 'member',
+    'Ressortleiter' => 'head',
+    'Vorstand_Finanzen' => 'board_finance',
+    'Vorstand_Intern' => 'board_internal',
+    'Vorstand_Extern' => 'board_external',
+    'Vorstand' => 'board_internal',
+    'Alumni' => 'alumni',
+    'Alumni_Vorstand' => 'alumni_board',
+    'Alumni_Finanz' => 'alumni_auditor',
+    'Ehrenmitglied' => 'honorary_member',
+    // Capitalized versions with space (alternative Group display names)
+    'Vorstand Finanzen' => 'board_finance',
+    'Vorstand Intern' => 'board_internal',
+    'Vorstand Extern' => 'board_external',
+    'Alumni Vorstand' => 'alumni_board',
+    'Alumni Finanz' => 'alumni_auditor'
+]);
+
 // Load helper functions globally
 require_once __DIR__ . '/../includes/helpers.php';

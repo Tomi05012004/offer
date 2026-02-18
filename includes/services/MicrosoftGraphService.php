@@ -36,11 +36,25 @@ class MicrosoftGraphService {
     ];
     
     /**
-     * Constructor: Obtain access token via Client Credentials Flow
+     * Constructor: Obtain access token via Client Credentials Flow or use provided user token
      * 
+     * @param string|null $userAccessToken Optional user access token (from OAuth login)
      * @throws Exception If authentication fails or environment variables are missing
      */
-    public function __construct() {
+    public function __construct($userAccessToken = null) {
+        // Initialize Guzzle HTTP client
+        $this->httpClient = new Client([
+            'timeout' => 30,
+            'connect_timeout' => 10,
+        ]);
+        
+        // If a user access token is provided, use it directly
+        if ($userAccessToken !== null) {
+            $this->accessToken = $userAccessToken;
+            return;
+        }
+        
+        // Otherwise, obtain access token using Client Credentials Flow
         // Verify required environment variables are set
         $tenantId = defined('AZURE_TENANT_ID') ? AZURE_TENANT_ID : '';
         $clientId = defined('AZURE_CLIENT_ID') ? AZURE_CLIENT_ID : '';
@@ -49,12 +63,6 @@ class MicrosoftGraphService {
         if (empty($tenantId) || empty($clientId) || empty($clientSecret)) {
             throw new Exception('Azure credentials not configured. Check AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET in .env file.');
         }
-        
-        // Initialize Guzzle HTTP client
-        $this->httpClient = new Client([
-            'timeout' => 30,
-            'connect_timeout' => 10,
-        ]);
         
         // Obtain access token using Client Credentials Flow
         $this->accessToken = $this->getAccessToken($tenantId, $clientId, $clientSecret);
@@ -460,6 +468,48 @@ class MicrosoftGraphService {
             // Return empty array instead of throwing exception for graceful degradation
             error_log('Failed to fetch groups from Microsoft Graph API for event role selection: ' . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * Get member groups for the current user (requires user access token)
+     * This method uses the /me endpoint and requires a user access token (not service account)
+     * 
+     * @return array Array of groups with 'id' and 'displayName'
+     * @throws Exception If groups retrieval fails
+     */
+    public function getMemberGroups(): array {
+        $groupsUrl = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?\$select=id,displayName";
+        
+        try {
+            $response = $this->httpClient->get($groupsUrl, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->accessToken,
+                    'Content-Type' => 'application/json'
+                ]
+            ]);
+            
+            $body = json_decode($response->getBody()->getContents(), true);
+            
+            if (!isset($body['value']) || !is_array($body['value'])) {
+                return [];
+            }
+            
+            // Extract id and displayName from each group
+            $groups = [];
+            foreach ($body['value'] as $group) {
+                if (isset($group['id']) && isset($group['displayName'])) {
+                    $groups[] = [
+                        'id' => $group['id'],
+                        'displayName' => $group['displayName']
+                    ];
+                }
+            }
+            
+            return $groups;
+            
+        } catch (GuzzleException $e) {
+            throw new Exception('Failed to fetch member groups: ' . $e->getMessage());
         }
     }
 }

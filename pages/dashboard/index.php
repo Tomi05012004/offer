@@ -125,6 +125,10 @@ $title = 'Dashboard - IBC Intranet';
 ob_start();
 ?>
 
+<?php if (Auth::isAdmin()): ?>
+<a href="../auth/debug_entra.php" style="background:red; color:white; padding:10px; display:block; text-align:center;">⚠️ Klicke hier zur Rollen-Diagnose ⚠️</a>
+<?php endif; ?>
+
 <?php if (!empty($user['prompt_profile_review']) && $user['prompt_profile_review'] == 1): ?>
 <!-- Profile Review Prompt Modal -->
 <div id="profile-review-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

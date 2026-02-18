@@ -508,10 +508,10 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         })();
     </script>
     <!-- Mobile Menu Overlay -->
-    <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 hidden transition-opacity duration-300"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Mobile Menu Toggle - Enhanced Design -->
-    <div class="lg:hidden fixed top-4 left-4 z-50">
+    <div class="md:hidden fixed top-4 left-4 z-50">
         <button id="mobile-menu-btn" class="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95">
             <svg class="w-6 h-6 text-gray-600 dark:text-white transition-transform duration-300" id="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path id="menu-icon-top" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16" class="transition-all duration-300"></path>
@@ -971,58 +971,48 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     </main>
 
     <script>
-        // Mobile menu toggle with animated icon
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const menuIcon = document.getElementById('menu-icon');
-        const menuIconTop = document.getElementById('menu-icon-top');
-        const menuIconMiddle = document.getElementById('menu-icon-middle');
-        const menuIconBottom = document.getElementById('menu-icon-bottom');
-        
-        function toggleSidebar() {
-            const isOpen = sidebar.classList.contains('-translate-x-full');
-            
-            sidebar.classList.toggle('-translate-x-full');
-            sidebar.classList.toggle('open'); // Add CSS class for mobile sidebar
-            sidebarOverlay.classList.toggle('hidden');
-            sidebarOverlay.classList.toggle('active'); // Add CSS class for overlay
-            
-            // Animate hamburger to X and back
-            if (isOpen) {
-                // Transform to X (opening sidebar)
-                menuIconTop?.setAttribute('d', 'M6 18L18 6');
-                menuIconMiddle?.setAttribute('d', 'M12 12h0');
-                menuIconMiddle?.setAttribute('opacity', '0');
-                menuIconBottom?.setAttribute('d', 'M6 6L18 18');
-            } else {
-                // Transform back to hamburger
-                menuIconTop?.setAttribute('d', 'M4 6h16');
-                menuIconMiddle?.setAttribute('d', 'M4 12h16');
-                menuIconMiddle?.setAttribute('opacity', '1');
-                menuIconBottom?.setAttribute('d', 'M4 18h16');
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuIconTop = document.getElementById('menu-icon-top');
+            const menuIconMiddle = document.getElementById('menu-icon-middle');
+            const menuIconBottom = document.getElementById('menu-icon-bottom');
+
+            if (btn && sidebar) {
+                btn.addEventListener('click', function() {
+                    sidebar.classList.toggle('open');
+                    if (overlay) overlay.classList.toggle('active');
+                    
+                    // Animate hamburger to X and back
+                    const isOpen = sidebar.classList.contains('open');
+                    if (isOpen) {
+                        // Transform to X (opening sidebar)
+                        menuIconTop?.setAttribute('d', 'M6 18L18 6');
+                        menuIconMiddle?.setAttribute('d', 'M12 12h0');
+                        menuIconMiddle?.setAttribute('opacity', '0');
+                        menuIconBottom?.setAttribute('d', 'M6 6L18 18');
+                    } else {
+                        // Transform back to hamburger
+                        menuIconTop?.setAttribute('d', 'M4 6h16');
+                        menuIconMiddle?.setAttribute('d', 'M4 12h16');
+                        menuIconMiddle?.setAttribute('opacity', '1');
+                        menuIconBottom?.setAttribute('d', 'M4 18h16');
+                    }
+                });
             }
-        }
-        
-        mobileMenuBtn?.addEventListener('click', () => {
-            toggleSidebar();
-        });
 
-        // Close sidebar when clicking overlay
-        sidebarOverlay?.addEventListener('click', () => {
-            toggleSidebar();
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth < 1024 && 
-                !sidebar.contains(e.target) && 
-                !mobileMenuBtn.contains(e.target) &&
-                !sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.add('-translate-x-full');
-                sidebar.classList.remove('open'); // Remove CSS class for mobile sidebar
-                sidebarOverlay.classList.add('hidden');
-                sidebarOverlay.classList.remove('active'); // Remove CSS class for overlay
+            if (overlay && sidebar) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                    
+                    // Reset hamburger icon
+                    menuIconTop?.setAttribute('d', 'M4 6h16');
+                    menuIconMiddle?.setAttribute('d', 'M4 12h16');
+                    menuIconMiddle?.setAttribute('opacity', '1');
+                    menuIconBottom?.setAttribute('d', 'M4 18h16');
+                });
             }
         });
         

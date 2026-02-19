@@ -136,10 +136,10 @@ class User {
         $db = Database::getUserDB();
         
         if ($role) {
-            $stmt = $db->prepare("SELECT id, email, role, tfa_enabled, is_alumni_validated, last_login, created_at, entra_roles FROM users WHERE role = ? ORDER BY created_at DESC");
+            $stmt = $db->prepare("SELECT id, email, role, user_type, tfa_enabled, is_alumni_validated, last_login, created_at, entra_roles FROM users WHERE role = ? ORDER BY created_at DESC");
             $stmt->execute([$role]);
         } else {
-            $stmt = $db->query("SELECT id, email, role, tfa_enabled, is_alumni_validated, last_login, created_at, entra_roles FROM users ORDER BY created_at DESC");
+            $stmt = $db->query("SELECT id, email, role, user_type, tfa_enabled, is_alumni_validated, last_login, created_at, entra_roles FROM users ORDER BY created_at DESC");
         }
         
         return $stmt->fetchAll();

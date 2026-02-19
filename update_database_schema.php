@@ -114,6 +114,13 @@ try {
         "Add show_birthday column to users table"
     );
     
+    // Add user_type column to users table
+    executeSql(
+        $user_db,
+        "ALTER TABLE users ADD COLUMN user_type ENUM('member', 'guest') DEFAULT NULL COMMENT 'Microsoft Entra ID user type: member (internal) or guest (external/invited)' AFTER azure_oid",
+        "Add user_type column to users table"
+    );
+    
     // Drop invitation_tokens table (token-based registration removed)
     executeSql(
         $user_db,

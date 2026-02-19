@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `notify_new_projects` BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Receive email notifications for new projects',
   `notify_new_events` BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Receive email notifications for new events',
   `theme_preference` ENUM('auto', 'light', 'dark') DEFAULT 'auto' COMMENT 'User interface theme preference',
+  `current_session_id` VARCHAR(255) DEFAULT NULL COMMENT 'Active session ID for single-session enforcement; NULL if no active session',
   `deleted_at` DATETIME DEFAULT NULL COMMENT 'Timestamp when the user was soft deleted (NULL = active)',
   `last_reminder_sent_at` DATETIME DEFAULT NULL COMMENT 'Timestamp when the last profile reminder email was sent to the user',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

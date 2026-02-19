@@ -121,6 +121,13 @@ try {
         "Add user_type column to users table"
     );
     
+    // Add current_session_id column to users table for single-session enforcement
+    executeSql(
+        $user_db,
+        "ALTER TABLE users ADD COLUMN current_session_id VARCHAR(255) DEFAULT NULL COMMENT 'Active session ID for single-session enforcement; NULL if no active session'",
+        "Add current_session_id column to users table"
+    );
+
     // Drop invitation_tokens table (token-based registration removed)
     executeSql(
         $user_db,

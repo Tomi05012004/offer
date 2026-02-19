@@ -50,6 +50,11 @@ class Auth {
     
 
     /**
+     * Whether the single-session check has already been performed for this request
+     */
+    private static $sessionVerified = false;
+
+    /**
      * Check if user is authenticated and handle session timeout
      * 
      * @return bool True if authenticated
@@ -83,6 +88,36 @@ class Auth {
                 }
                 header('Location: ' . $loginUrl);
                 exit;
+            }
+        }
+        
+        // Enforce single active session per user (checked once per request for performance)
+        if (!self::$sessionVerified && isset($_SESSION['user_id'])) {
+            self::$sessionVerified = true;
+            try {
+                $db = Database::getUserDB();
+                $stmt = $db->prepare("SELECT current_session_id FROM users WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $row = $stmt->fetch();
+                
+                if ($row && $row['current_session_id'] !== null && $row['current_session_id'] !== session_id()) {
+                    // Session ID mismatch – user logged in from another device
+                    session_unset();
+                    session_destroy();
+                    // Clear the session cookie so the browser doesn't reuse the old session ID
+                    if (isset($_COOKIE[session_name()])) {
+                        setcookie(session_name(), '', time() - 42000, '/');
+                    }
+                    
+                    $loginUrl = '/pages/auth/login.php?error=' . urlencode('Du wurdest abgemeldet, da eine neue Anmeldung an einem anderen Gerät erfolgt ist');
+                    if (defined('BASE_URL') && BASE_URL) {
+                        $loginUrl = BASE_URL . $loginUrl;
+                    }
+                    header('Location: ' . $loginUrl);
+                    exit;
+                }
+            } catch (Exception $e) {
+                error_log("Session verification failed: " . $e->getMessage());
             }
         }
         
@@ -185,6 +220,10 @@ class Auth {
         // Regenerate session ID to prevent session fixation attacks
         session_regenerate_id(true);
         
+        // Store current session ID in database for single-session enforcement
+        $stmt = $db->prepare("UPDATE users SET current_session_id = ? WHERE id = ?");
+        $stmt->execute([session_id(), $user['id']]);
+        
         // Set session variables
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
@@ -257,6 +296,17 @@ class Auth {
     public static function logout() {
         // Initialize session with secure parameters if not already started
         init_session();
+        
+        // Clear current_session_id in database so no stale session ID remains
+        if (isset($_SESSION['user_id'])) {
+            try {
+                $db = Database::getUserDB();
+                $stmt = $db->prepare("UPDATE users SET current_session_id = NULL WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+            } catch (Exception $e) {
+                error_log("Failed to clear session ID on logout: " . $e->getMessage());
+            }
+        }
         
         // Clear all session data
         session_unset();

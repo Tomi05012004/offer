@@ -6,17 +6,93 @@ header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 header("X-Content-Type-Options: nosniff");
 
-// Database Settings
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'deine_db_name'); // ANPASSEN
-define('DB_USER', 'deine_db_user'); // ANPASSEN
-define('DB_PASS', 'deine_db_pass'); // ANPASSEN
+// Load .env file
+$_envFile = __DIR__ . '/../.env';
+if (file_exists($_envFile)) {
+    foreach (file($_envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $_line) {
+        $_line = trim($_line);
+        if (strpos($_line, '#') === 0 || strpos($_line, '=') === false) continue;
+        [$_key, $_val] = explode('=', $_line, 2);
+        $_key = trim($_key);
+        $_val = trim($_val);
+        if (strlen($_val) >= 2 && $_val[0] === '"' && substr($_val, -1) === '"') {
+            $_val = substr($_val, 1, -1);
+        } elseif (strlen($_val) >= 2 && $_val[0] === "'" && substr($_val, -1) === "'") {
+            $_val = substr($_val, 1, -1);
+        }
+        if (preg_match('/^[A-Z][A-Z0-9_]*$/i', $_key) && !isset($_ENV[$_key])) {
+            $_ENV[$_key] = $_val;
+        }
+    }
+    unset($_envFile, $_line, $_key, $_val);
+} else {
+    unset($_envFile);
+}
 
-// Microsoft Entra Settings
-define('TENANT_ID', 'DEINE_TENANT_ID');     // ANPASSEN
-define('CLIENT_ID', 'DEINE_CLIENT_ID');     // ANPASSEN
-define('CLIENT_SECRET', 'DEIN_SECRET');     // ANPASSEN
-define('REDIRECT_URI', 'https://deine-domain.de/auth/callback.php'); // ANPASSEN
+// Helper to read env value with default
+function _env($key, $default = '') {
+    if (isset($_ENV[$key])) return $_ENV[$key];
+    $val = getenv($key);
+    return $val !== false ? $val : $default;
+}
+
+// Application Settings
+if (!defined('BASE_URL')) {
+    define('BASE_URL', _env('BASE_URL', ''));
+}
+define('ENVIRONMENT', _env('ENVIRONMENT', 'production'));
+
+// Error reporting based on environment
+if (ENVIRONMENT !== 'production') {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+}
+
+// Database Settings (User DB)
+define('DB_USER_HOST', _env('DB_USER_HOST', 'localhost'));
+define('DB_USER_NAME', _env('DB_USER_NAME', ''));
+define('DB_USER_USER', _env('DB_USER_USER', ''));
+define('DB_USER_PASS', _env('DB_USER_PASS', ''));
+
+// Database Settings (Content DB)
+define('DB_CONTENT_HOST', _env('DB_CONTENT_HOST', 'localhost'));
+define('DB_CONTENT_NAME', _env('DB_CONTENT_NAME', ''));
+define('DB_CONTENT_USER', _env('DB_CONTENT_USER', ''));
+define('DB_CONTENT_PASS', _env('DB_CONTENT_PASS', ''));
+
+// Database Settings (Invoice/Rech DB)
+define('DB_RECH_HOST', _env('DB_RECH_HOST', _env('DB_INVOICE_HOST', 'localhost')));
+define('DB_RECH_PORT', _env('DB_RECH_PORT', _env('DB_INVOICE_PORT', '3306')));
+define('DB_RECH_NAME', _env('DB_RECH_NAME', _env('DB_INVOICE_NAME', '')));
+define('DB_RECH_USER', _env('DB_RECH_USER', _env('DB_INVOICE_USER', '')));
+define('DB_RECH_PASS', _env('DB_RECH_PASS', _env('DB_INVOICE_PASS', '')));
+
+// SMTP Settings
+define('SMTP_HOST',       _env('SMTP_HOST', ''));
+define('SMTP_PORT',       (int) _env('SMTP_PORT', '587'));
+define('SMTP_USER',       _env('SMTP_USER', ''));
+define('SMTP_PASS',       _env('SMTP_PASS', ''));
+define('SMTP_FROM',       _env('SMTP_FROM', ''));
+define('SMTP_FROM_EMAIL', _env('SMTP_FROM_EMAIL', ''));
+define('SMTP_FROM_NAME',  _env('SMTP_FROM_NAME', 'IBC Intranet'));
+
+// Azure / Microsoft Entra Settings
+define('AZURE_TENANT_ID',     _env('AZURE_TENANT_ID', ''));
+define('AZURE_CLIENT_ID',     _env('AZURE_CLIENT_ID', ''));
+define('AZURE_CLIENT_SECRET', _env('AZURE_CLIENT_SECRET', ''));
+define('AZURE_REDIRECT_URI',  _env('AZURE_REDIRECT_URI', ''));
+
+// Legacy aliases for backward compatibility
+define('TENANT_ID',    AZURE_TENANT_ID);
+define('CLIENT_ID',    AZURE_CLIENT_ID);
+define('CLIENT_SECRET', AZURE_CLIENT_SECRET);
+define('REDIRECT_URI', AZURE_REDIRECT_URI);
+
+// EasyVerein API
+define('EASYVEREIN_API_TOKEN', _env('EASYVEREIN_API_TOKEN', ''));
 
 // Role Mapping (IDs aus Entra -> Interne Rollen)
 define('ROLE_MAPPING', [

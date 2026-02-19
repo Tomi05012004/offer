@@ -412,7 +412,10 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
-                    <?php foreach ($users as $user): ?>
+                    <?php
+                    // Build reverse lookup once: UUID => role key (e.g. '3ad43a76-...' => 'board_finance')
+                    $roleIdToKey = array_flip(ROLE_MAPPING);
+                    foreach ($users as $user): ?>
                 <tr class="user-row hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 dark:hover:from-purple-900/20 dark:hover:to-indigo-900/20 transition-all duration-200" 
                     data-email="<?php echo htmlspecialchars(strtolower($user['email'])); ?>"
                     data-role="<?php echo htmlspecialchars($user['role']); ?>"
@@ -473,10 +476,28 @@ ob_start();
                             
                             if (!empty($entraRoles) && is_array($entraRoles)): 
                             ?>
-                                <?php foreach ($entraRoles as $entraRole): ?>
-                                <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-800 dark:text-blue-200 rounded-lg font-medium shadow-sm">
+                                <?php foreach ($entraRoles as $entraRole):
+                                    // Handle both object format {id, displayName} and legacy string format
+                                    if (is_array($entraRole)) {
+                                        $groupId = $entraRole['id'] ?? '';
+                                        if ($groupId && isset($roleIdToKey[$groupId])) {
+                                            $roleLabel = 'Entra: ' . translateRole($roleIdToKey[$groupId]);
+                                        } else {
+                                            $roleLabel = 'Entra: ' . ($entraRole['displayName'] ?? $groupId);
+                                        }
+                                    } else {
+                                        // Legacy: plain string – may be a UUID or a display name
+                                        if (isset($roleIdToKey[$entraRole])) {
+                                            $roleLabel = 'Entra: ' . translateRole($roleIdToKey[$entraRole]);
+                                        } else {
+                                            $roleLabel = 'Entra: ' . $entraRole;
+                                        }
+                                    }
+                                ?>
+                                <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-800 dark:text-blue-200 rounded-lg font-medium shadow-sm"
+                                      title="<?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>">
                                     <i class="fas fa-user-tag mr-1.5 text-xs"></i>
-                                    <?php echo htmlspecialchars($entraRole); ?>
+                                    <?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>
                                 </span>
                                 <?php endforeach; ?>
                             <?php else: ?>

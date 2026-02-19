@@ -32,20 +32,6 @@ define('ROLE_MAPPING', [
     'candidate'       => '75edcb0a-c610-4ceb-82f2-457a9dde4fc0'
 ]);
 
-// Helper Functions
-function asset($path) {
-    // Validate and sanitize HTTP_HOST to prevent header injection attacks
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    
-    // Only allow alphanumeric characters, dots, hyphens, and colons (for port)
-    if (!preg_match('/^[a-zA-Z0-9.\-:]+$/', $host)) {
-        $host = 'localhost'; // Fallback to safe default
-    }
-    
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-    return $protocol . $host . '/' . ltrim($path, '/');
-}
-
 function isActivePath($path) {
     return strpos($_SERVER['REQUEST_URI'], $path) !== false;
 }

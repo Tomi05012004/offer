@@ -1545,7 +1545,7 @@ try {
                 <div></div>
                 <div></div>
             </div>
-            <span>Mit Microsoft anmelden</span>
+            <span>Mit Microsoft Konto anmelden</span>
             <div class="loading-spinner"></div>
             <div class="success-checkmark"></div>
         </a>

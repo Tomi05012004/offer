@@ -152,47 +152,21 @@ ob_start();
                 <?php
                 // Determine role badge color
                 $roleBadgeColors = [
-                    'board' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'board_finance' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'board_internal' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'board_external' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_intern' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_extern' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_finanzen_recht' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'head' => 'bg-blue-100 text-blue-800 border-blue-300',
                     'member' => 'bg-green-100 text-green-800 border-green-300',
-                    'candidate' => 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                    'candidate' => 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                    'alumni' => 'bg-gray-100 text-gray-800 border-gray-300',
+                    'alumni_board' => 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    'alumni_auditor' => 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    'honorary_member' => 'bg-amber-100 text-amber-800 border-amber-300',
                 ];
                 
-                $roleNames = [
-                    'board' => 'Vorstand',
-                    'board_finance' => 'Vorstand Finanzen',
-                    'board_internal' => 'Vorstand Intern',
-                    'board_external' => 'Vorstand Extern',
-                    'vorstand_intern' => 'Vorstand Intern',
-                    'vorstand_extern' => 'Vorstand Extern',
-                    'vorstand_finanzen_recht' => 'Vorstand Finanzen & Recht',
-                    'head' => 'Ressortleiter',
-                    'member' => 'Mitglied',
-                    'candidate' => 'Anwärter'
-                ];
-                
-                // Use display_role computed by Member::getAllActive() (prefers Entra display names)
-                $displayRole = '';
-                $badgeClass = '';
-                
-                if (!empty($member['entra_roles'])) {
-                    $displayRole = htmlspecialchars($member['display_role']);
-                    $badgeClass = 'bg-purple-100 text-purple-800 border-purple-300';
-                } elseif (!empty($member['job_title'])) {
-                    // Use job title from Microsoft Entra if available
-                    $displayRole = htmlspecialchars($member['job_title']);
-                    $badgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
-                } else {
-                    // Fall back to display_role (translated internal role label)
-                    $badgeClass = $roleBadgeColors[$member['role']] ?? 'bg-gray-100 text-gray-800 border-gray-300';
-                    $displayRole = htmlspecialchars($member['display_role']);
-                }
+                // Always display the admin-assigned role using the canonical German label
+                $badgeClass = $roleBadgeColors[$member['role']] ?? 'bg-gray-100 text-gray-800 border-gray-300';
+                $displayRole = htmlspecialchars(Auth::getRoleLabel($member['role']));
                 
                 // Generate initials for fallback
                 $initials = strtoupper(substr($member['first_name'], 0, 1) . substr($member['last_name'], 0, 1));

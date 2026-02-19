@@ -116,43 +116,23 @@ ob_start();
                 
                 <!-- Role Badge -->
                 <?php
-                // Define role badge colors and names
+                // Define role badge colors
                 $roleBadgeColors = [
-                    'board' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_intern' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_extern' => 'bg-purple-100 text-purple-800 border-purple-300',
-                    'vorstand_finanzen_recht' => 'bg-purple-100 text-purple-800 border-purple-300',
+                    'board_finance' => 'bg-purple-100 text-purple-800 border-purple-300',
+                    'board_internal' => 'bg-purple-100 text-purple-800 border-purple-300',
+                    'board_external' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'head' => 'bg-blue-100 text-blue-800 border-blue-300',
                     'member' => 'bg-green-100 text-green-800 border-green-300',
                     'candidate' => 'bg-yellow-100 text-yellow-800 border-yellow-300',
                     'alumni' => 'bg-purple-100 text-purple-800 border-purple-300',
                     'alumni_board' => 'bg-indigo-100 text-indigo-800 border-indigo-300',
-                    'honorary_member' => 'bg-amber-100 text-amber-800 border-amber-300'
+                    'alumni_auditor' => 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    'honorary_member' => 'bg-amber-100 text-amber-800 border-amber-300',
                 ];
                 
-                $roleNames = [
-                    'board' => 'Vorstand',
-                    'vorstand_intern' => 'Vorstand',
-                    'vorstand_extern' => 'Vorstand',
-                    'vorstand_finanzen_recht' => 'Vorstand',
-                    'head' => 'Ressortleiter',
-                    'member' => 'Mitglied',
-                    'candidate' => 'Anwärter',
-                    'alumni' => 'Alumni',
-                    'alumni_board' => 'Alumni Vorstand',
-                    'honorary_member' => 'Ehrenmitglied'
-                ];
-                
-                // Check if Entra roles exist and are not empty
-                if (!empty($profileUserEntraRoles)) {
-                    // Entra roles exist - display them as comma-separated string
-                    $displayRole = $profileUserEntraRoles;
-                    $badgeClass = 'bg-purple-100 text-purple-800 border-purple-300';
-                } else {
-                    // Fall back to internal role
-                    $badgeClass = $roleBadgeColors[$profileUserRole] ?? 'bg-gray-100 text-gray-800 border-gray-300';
-                    $displayRole = $roleNames[$profileUserRole] ?? ucfirst($profileUserRole);
-                }
+                // Always display the admin-assigned role using the canonical German label
+                $badgeClass = $roleBadgeColors[$profileUserRole] ?? 'bg-gray-100 text-gray-800 border-gray-300';
+                $displayRole = Auth::getRoleLabel($profileUserRole);
                 ?>
                 <div class="mb-4">
                     <span class="inline-block px-4 py-2 text-sm font-semibold rounded-full border <?php echo $badgeClass; ?>">

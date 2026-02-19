@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../src/Auth.php';
+require_once __DIR__ . '/../../src/MailService.php';
 require_once __DIR__ . '/../../includes/models/User.php';
 require_once __DIR__ . '/../../includes/helpers.php';
 require_once __DIR__ . '/../../includes/handlers/CSRFHandler.php';
@@ -130,6 +131,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($stmt->execute([$entraEmail, $passwordHash, $firstName, $lastName, $role, $entraId, $isAlumniValidated])) {
                     $message = 'Entra-Benutzer "' . htmlspecialchars($displayName) . '" erfolgreich hinzugefügt.';
+                    if (!MailService::sendActivationEmail($entraEmail)) {
+                        error_log("Activation email could not be sent to {$entraEmail}");
+                        $message .= ' (Hinweis: Aktivierungs-E-Mail konnte nicht gesendet werden.)';
+                    }
                 } else {
                     $error = 'Fehler beim Speichern des Benutzers.';
                 }

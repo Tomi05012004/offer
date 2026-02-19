@@ -1261,6 +1261,23 @@ class MailService {
     }
     
     /**
+     * Send activation email to a newly added Entra user
+     *
+     * @param string $email Recipient email address
+     * @return bool Success status
+     */
+    public static function sendActivationEmail($email) {
+        $subject = 'Dein IBC Intranet Zugang wurde aktiviert';
+
+        $bodyContent = '<p class="email-text">Hallo,</p>
+        <p class="email-text">Dein Zugang zum IBC Intranet wurde aktiviert. Du kannst dich ab sofort mit deinem Microsoft-Konto anmelden.</p>';
+
+        $htmlBody = self::getTemplate('Willkommen im IBC Intranet', $bodyContent);
+
+        return self::sendEmailWithEmbeddedImage($email, $subject, $htmlBody);
+    }
+
+    /**
      * Send email with file attachment from file path
      * 
      * @param string $toEmail Recipient email address

@@ -481,7 +481,7 @@ class MicrosoftGraphService {
 
         $usersUrl = "https://graph.microsoft.com/v1.0/users"
             . "?\$filter=startswith(displayName,'{$safeQuery}') or startswith(mail,'{$safeQuery}')"
-            . "&\$select=id,displayName,mail"
+            . "&\$select=id,displayName,mail,userType"
             . "&\$top=20";
 
         try {
@@ -505,6 +505,7 @@ class MicrosoftGraphService {
                     'id'          => $user['id'] ?? '',
                     'displayName' => $user['displayName'] ?? '',
                     'mail'        => $user['mail'] ?? '',
+                    'userType'    => strtolower($user['userType'] ?? 'member'),
                 ];
             }
 

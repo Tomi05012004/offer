@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role` ENUM('candidate', 'alumni', 'member', 'honorary_member', 'head', 'alumni_board', 'alumni_auditor', 'board_finance', 'board_internal', 'board_external', 'admin', 'manager') NOT NULL DEFAULT 'member',
   `azure_roles` JSON DEFAULT NULL COMMENT 'Original Microsoft Entra ID roles from Azure AD authentication',
   `azure_oid` VARCHAR(255) DEFAULT NULL COMMENT 'Azure Object Identifier (OID) from Microsoft Entra ID authentication',
+  `user_type` ENUM('member', 'guest') DEFAULT NULL COMMENT 'Microsoft Entra ID user type: member (internal) or guest (external/invited)',
   `job_title` VARCHAR(255) DEFAULT NULL COMMENT 'Job title from Microsoft Entra ID',
   `company` VARCHAR(255) DEFAULT NULL COMMENT 'Company name from Microsoft Entra ID',
   `entra_roles` TEXT DEFAULT NULL COMMENT 'JSON array of Microsoft Entra role names for display',

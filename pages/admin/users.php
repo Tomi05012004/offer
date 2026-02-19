@@ -50,6 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $displayName  = trim($_POST['display_name'] ?? '');
         $entraEmail   = trim($_POST['entra_email'] ?? '');
         $role         = $_POST['role'] ?? 'member';
+        $userType     = $_POST['user_type'] ?? 'member';
+
+        // Normalize and validate user_type
+        $userType = strtolower($userType) === 'guest' ? 'guest' : 'member';
 
         if (empty($entraId) || empty($entraEmail)) {
             $error = 'Entra-ID und E-Mail sind erforderlich.';
@@ -79,10 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $isAlumniValidated = ($role === 'alumni') ? 0 : 1;
 
                 $stmt = $db->prepare(
-                    "INSERT INTO users (email, password, first_name, last_name, role, azure_oid, is_alumni_validated, profile_complete)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
+                    "INSERT INTO users (email, password, first_name, last_name, role, azure_oid, user_type, is_alumni_validated, profile_complete)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)"
                 );
-                if ($stmt->execute([$entraEmail, $passwordHash, $firstName, $lastName, $role, $entraId, $isAlumniValidated])) {
+                if ($stmt->execute([$entraEmail, $passwordHash, $firstName, $lastName, $role, $entraId, $userType, $isAlumniValidated])) {
                     $message = 'Entra-Benutzer "' . htmlspecialchars($displayName) . '" erfolgreich hinzugefügt.';
                     if (!MailService::sendActivationEmail($entraEmail)) {
                         error_log("Activation email could not be sent to {$entraEmail}");
@@ -552,6 +556,7 @@ ob_start();
                 <input type="hidden" name="entra_id" id="importEntraId">
                 <input type="hidden" name="display_name" id="importDisplayName">
                 <input type="hidden" name="entra_email" id="importEntraEmail">
+                <input type="hidden" name="user_type" id="importUserType">
                 <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                     <i class="fas fa-user-plus mr-2 text-green-600"></i>Benutzer hinzufügen
                 </h4>
@@ -564,6 +569,7 @@ ob_start();
                             <div id="importPreviewName" class="font-semibold text-gray-900 dark:text-gray-100"></div>
                             <div id="importPreviewEmail" class="text-sm text-gray-500 dark:text-gray-400"></div>
                             <div id="importPreviewId" class="text-xs text-gray-400 dark:text-gray-500 font-mono"></div>
+                            <div id="importPreviewUserType" class="text-xs mt-1"></div>
                         </div>
                     </div>
                 </div>
@@ -823,14 +829,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (users.length === 0) {
                     resultsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-sm p-3 italic">Keine Benutzer gefunden.</div>';
                 } else {
-                    resultsList.innerHTML = users.map(u => `
+                    resultsList.innerHTML = users.map(u => {
+                        const isGuest = (u.userType || '').toLowerCase() === 'guest';
+                        const typeBadge = isGuest
+                            ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 ml-1">Gast</span>'
+                            : '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 ml-1">Mitglied</span>';
+                        return `
                         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-all">
                             <div class="flex items-center space-x-3">
                                 <div class="w-9 h-9 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
                                     <i class="fab fa-microsoft text-white text-sm"></i>
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm">${escapeHtml(u.displayName || '(kein Name)')}</div>
+                                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm">${escapeHtml(u.displayName || '(kein Name)')}${typeBadge}</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(u.mail || '(keine E-Mail)')}</div>
                                     <div class="text-xs text-gray-400 dark:text-gray-500 font-mono">${escapeHtml(u.id)}</div>
                                 </div>
@@ -840,11 +851,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 data-id="${escapeHtml(u.id)}"
                                 data-name="${escapeHtml(u.displayName || '')}"
                                 data-email="${escapeHtml(u.mail || '')}"
+                                data-usertype="${escapeHtml(u.userType || 'member')}"
                                 onclick="selectEntraUser(this)"
                             >
                                 <i class="fas fa-plus mr-1"></i>Auswählen
                             </button>
-                        </div>`).join('');
+                        </div>`;
+                    }).join('');
                 }
                 resultsEl.classList.remove('hidden');
             })
@@ -878,16 +891,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.selectEntraUser = function(btn) {
-        const id    = btn.getAttribute('data-id');
-        const name  = btn.getAttribute('data-name');
-        const email = btn.getAttribute('data-email');
+        const id       = btn.getAttribute('data-id');
+        const name     = btn.getAttribute('data-name');
+        const email    = btn.getAttribute('data-email');
+        const userType = btn.getAttribute('data-usertype') || 'member';
+
+        const isGuest = userType.toLowerCase() === 'guest';
+        const typeLabel = isGuest ? 'Gast' : 'Mitglied';
+        const typeClass = isGuest
+            ? 'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+            : 'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
 
         document.getElementById('importEntraId').value      = id;
         document.getElementById('importDisplayName').value  = name;
         document.getElementById('importEntraEmail').value   = email;
+        document.getElementById('importUserType').value     = isGuest ? 'guest' : 'member';
         document.getElementById('importPreviewName').textContent  = name || '(kein Name)';
         document.getElementById('importPreviewEmail').textContent = email || '(keine E-Mail)';
         document.getElementById('importPreviewId').textContent    = 'Entra-ID: ' + id;
+
+        const typeEl = document.getElementById('importPreviewUserType');
+        typeEl.innerHTML = `<span class="${typeClass}">Entra-Typ: ${typeLabel}</span>`;
 
         importForm.classList.remove('hidden');
         importForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

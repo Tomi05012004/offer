@@ -42,6 +42,9 @@ if (!defined('BASE_URL')) {
 }
 define('ENVIRONMENT', _env('ENVIRONMENT', 'production'));
 
+// Password hashing algorithm
+define('HASH_ALGO', PASSWORD_BCRYPT);
+
 // Error reporting based on environment
 if (ENVIRONMENT !== 'production') {
     ini_set('display_errors', 1);

@@ -114,36 +114,11 @@ try {
         "Add show_birthday column to users table"
     );
     
-    // Create invitation_tokens table
-    $create_invitation_tokens_table = "
-    CREATE TABLE IF NOT EXISTS invitation_tokens (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        token VARCHAR(255) NOT NULL UNIQUE,
-        email VARCHAR(255) NOT NULL,
-        role ENUM('board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor', 'alumni', 'honorary_member', 'head', 'member', 'candidate') NOT NULL DEFAULT 'member',
-        created_by INT UNSIGNED NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        used_at TIMESTAMP NULL DEFAULT NULL,
-        used_by INT UNSIGNED DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL,
-        
-        INDEX idx_token (token),
-        INDEX idx_email (email),
-        INDEX idx_created_by (created_by),
-        INDEX idx_expires_at (expires_at)
-    ) ENGINE=InnoDB
-      DEFAULT CHARSET=utf8mb4
-      COLLATE=utf8mb4_unicode_ci
-      COMMENT='Invitation tokens for user registration'
-    ";
-    
+    // Drop invitation_tokens table (token-based registration removed)
     executeSql(
         $user_db,
-        $create_invitation_tokens_table,
-        "Create invitation_tokens table"
+        "DROP TABLE IF EXISTS invitation_tokens",
+        "Drop invitation_tokens table"
     );
     
     // ============================================

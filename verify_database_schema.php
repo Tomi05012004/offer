@@ -115,7 +115,6 @@ try {
     checkColumn($user_db, 'users', 'deleted_at', 'users.deleted_at column');
     checkColumn($user_db, 'users', 'last_reminder_sent_at', 'users.last_reminder_sent_at column');
     checkColumn($user_db, 'users', 'show_birthday', 'users.show_birthday column');
-    checkTable($user_db, 'invitation_tokens', 'invitation_tokens table');
     
     // ============================================
     // CONTENT DATABASE CHECKS

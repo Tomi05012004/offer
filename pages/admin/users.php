@@ -10,59 +10,12 @@ if (!Auth::check() || !Auth::canManageUsers()) {
     exit;
 }
 
-// Check if user has permission for invitation management (board or higher)
-$canManageInvitations = Auth::canManageUsers();
-
 $message = '';
 $error = '';
 
 // Handle user actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['invite_user'])) {
-        $email = $_POST['email'] ?? '';
-        $role = $_POST['role'] ?? 'member';
-        $validityHours = isset($_POST['validity_hours']) ? intval($_POST['validity_hours']) : 168; // Default 7 days
-        
-        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Ungültige E-Mail-Adresse';
-        } else {
-            $token = Auth::generateInvitationToken($email, $role, $_SESSION['user_id'], $validityHours);
-            $inviteLink = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/pages/auth/register.php?token=' . $token;
-            
-            // For Alumni, Member and Candidate users, also send Microsoft Entra invitation
-            // Includes all alumni-related roles: alumni, alumni_board, alumni_auditor
-            if (in_array($role, ['alumni', 'alumni_board', 'alumni_auditor', 'member', 'candidate'])) {
-                try {
-                    require_once __DIR__ . '/../../includes/services/MicrosoftGraphService.php';
-                    
-                    // Extract name from email (e.g., "max.mustermann@example.com" -> "Max Mustermann")
-                    // Note: This is a best-effort approach since we don't have actual user data yet.
-                    // The user can update their display name in Azure AD after accepting the invitation.
-                    $emailParts = explode('@', $email);
-                    $namePart = $emailParts[0] ?? 'Alumni';
-                    $nameParts = explode('.', $namePart);
-                    $firstName = ucfirst($nameParts[0] ?? 'Alumni');
-                    $lastName = isset($nameParts[1]) ? ucfirst($nameParts[1]) : '';
-                    $displayName = trim($firstName . ' ' . $lastName);
-                    
-                    // Create redirect URL (where user lands after accepting invitation)
-                    $redirectUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/pages/auth/login.php';
-                    
-                    // Invite user to Microsoft Entra ID
-                    $graphService = new MicrosoftGraphService();
-                    $azureUserId = $graphService->inviteGuest($email, $displayName, $redirectUrl);
-                    
-                    $message = 'Einladung erstellt und an Microsoft Entra ID gesendet! Link: ' . $inviteLink;
-                } catch (Exception $e) {
-                    // Log error but still show local invitation link
-                    error_log('Failed to invite user to Microsoft Entra ID: ' . $e->getMessage());
-                    $message = 'Einladung erstellt! Link: ' . $inviteLink . ' (Hinweis: Microsoft Entra Einladung fehlgeschlagen - siehe Logs)';
-                }
-            } else {
-                $message = 'Einladung erstellt! Link: ' . $inviteLink;
-            }
-        }
-    } else if (isset($_POST['change_role'])) {
+    if (isset($_POST['change_role'])) {
         $userId = $_POST['user_id'] ?? 0;
         $newRole = $_POST['new_role'] ?? '';
         
@@ -177,10 +130,6 @@ ob_start();
                 </div>
             </div>
             <div class="flex items-center space-x-4">
-                <a href="bulk_invite.php" class="px-6 py-3 bg-white text-purple-700 rounded-xl hover:bg-purple-50 transition-all duration-200 flex items-center font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <i class="fas fa-user-plus mr-2"></i>
-                    Masseneinladung
-                </a>
                 <div class="bg-white bg-opacity-20 backdrop-blur-md px-6 py-3 rounded-xl border border-white border-opacity-30 shadow-lg">
                     <div class="flex items-center space-x-3">
                         <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -218,16 +167,7 @@ ob_start();
                     Benutzerliste
                 </span>
             </button>
-            <?php if ($canManageInvitations): ?>
-            <button 
-                class="tab-button flex-1 py-4 px-6 text-center font-semibold transition-all duration-200 relative overflow-hidden bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                data-tab="invitations"
-            >
-                <span class="relative z-10 flex items-center justify-center">
-                    <i class="fas fa-envelope mr-2"></i>
-                    Einladungen
-                </span>
-            </button>
+            <?php if (Auth::canManageUsers()): ?>
             <button 
                 class="tab-button flex-1 py-4 px-6 text-center font-semibold transition-all duration-200 relative overflow-hidden bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                 data-tab="entra-search"
@@ -277,13 +217,9 @@ ob_start();
                 </div>
                 <div class="ml-5 flex-1">
                     <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Microsoft Only Authentifizierung</h3>
-                    <p class="text-gray-700 dark:text-gray-300 mb-3">
-                        Benutzer werden ausschließlich über Microsoft Entra ID verwaltet. Neue Benutzer können nur über Einladungen hinzugefügt werden.
+                    <p class="text-gray-700 dark:text-gray-300">
+                        Benutzer werden ausschließlich über Microsoft Entra ID verwaltet. Neue Benutzer können über den Entra-Benutzer-Tab hinzugefügt werden.
                     </p>
-                    <a href="bulk_invite.php" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-md hover:shadow-lg">
-                        <i class="fas fa-arrow-right mr-2"></i>
-                        Zur Masseneinladung
-                    </a>
                 </div>
             </div>
         </div>
@@ -563,16 +499,8 @@ ob_start();
 </div>
 <!-- End Tab Content: Users -->
 
-<!-- Tab Content: Invitations -->
-<?php if ($canManageInvitations): ?>
-<div id="tab-invitations" class="tab-content hidden">
-    <?php include __DIR__ . '/../../templates/components/invitation_management.php'; ?>
-</div>
-<?php endif; ?>
-<!-- End Tab Content: Invitations -->
-
 <!-- Tab Content: Entra-Benutzer suchen -->
-<?php if ($canManageInvitations): ?>
+<?php if (Auth::canManageUsers()): ?>
 <div id="tab-entra-search" class="tab-content hidden">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
         <div class="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border-b border-gray-200 dark:border-gray-700">

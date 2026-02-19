@@ -40,25 +40,7 @@ $stmt = $userDb->query("
 $activeUsersPrev = $stmt->fetch()['active_users_prev'] ?? 0;
 $activeUsersTrend = $activeUsersPrev > 0 ? (($activeUsersCount - $activeUsersPrev) / $activeUsersPrev) * 100 : 0;
 
-// Metric 2: Open Invitations Count
-$stmt = $userDb->query("
-    SELECT COUNT(*) as open_invitations 
-    FROM invitation_tokens 
-    WHERE expires_at > NOW()
-");
-$openInvitationsCount = $stmt->fetch()['open_invitations'] ?? 0;
-
-// Open Invitations trend (compare with last week)
-$stmt = $userDb->query("
-    SELECT COUNT(*) as open_invitations_prev 
-    FROM invitation_tokens 
-    WHERE DATE(created_at) < DATE(DATE_SUB(NOW(), INTERVAL 7 DAY))
-    AND expires_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
-");
-$openInvitationsPrev = $stmt->fetch()['open_invitations_prev'] ?? 0;
-$openInvitationsTrend = $openInvitationsPrev > 0 ? (($openInvitationsCount - $openInvitationsPrev) / $openInvitationsPrev) * 100 : 0;
-
-// Metric 3: Total User Count
+// Metric 2: Total User Count
 $stmt = $userDb->query("SELECT COUNT(*) as total_users FROM users WHERE deleted_at IS NULL");
 $totalUsersCount = $stmt->fetch()['total_users'] ?? 0;
 
@@ -290,24 +272,6 @@ ob_start();
                 <?php endif; ?>
             </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Open Invitations -->
-        <div class="card p-6 rounded-xl shadow-lg bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/20 border-l-4 border-green-500 dark:border-green-600 hover:shadow-xl transition-shadow duration-300">
-            <div class="flex items-center justify-between mb-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Offene Einladungen</h3>
-                    <p class="text-3xl font-bold text-green-600 dark:text-green-400"><?php echo number_format($openInvitationsCount); ?></p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Nicht verwendet</p>
-                </div>
-                <div class="w-14 h-14 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
-                    <i class="fas fa-envelope-open-text text-green-600 dark:text-green-400 text-2xl"></i>
-                </div>
-            </div>
-            <div class="flex items-center text-sm mt-2 pt-2 border-t border-green-200 dark:border-green-800">
-                <i class="fas fa-clock text-gray-500 dark:text-gray-400 mr-1"></i>
-                <span class="text-gray-500 dark:text-gray-400">Gültig bis Ablauf</span>
-            </div>
         </div>
 
         <!-- Total Users -->
@@ -875,7 +839,6 @@ document.addEventListener('DOMContentLoaded', function() {
         exportBtn.addEventListener('click', function() {
             // Gather data from the page
             const activeUsers = <?php echo $activeUsersCount; ?>;
-            const openInvitations = <?php echo $openInvitationsCount; ?>;
             const totalUsers = <?php echo $totalUsersCount; ?>;
             
             // Create CSV content
@@ -885,7 +848,6 @@ document.addEventListener('DOMContentLoaded', function() {
             csv += 'Metriken\n';
             csv += 'Kategorie,Wert\n';
             csv += 'Aktive Nutzer (7 Tage),' + activeUsers + '\n';
-            csv += 'Offene Einladungen,' + openInvitations + '\n';
             csv += 'Gesamtanzahl User,' + totalUsers + '\n\n';
             
             // Add database stats if available

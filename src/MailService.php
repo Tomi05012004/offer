@@ -793,56 +793,6 @@ class MailService {
     }
     
     /**
-     * Send invitation email with registration token (New method)
-     * 
-     * @param string $email Recipient email address
-     * @param string $token Registration token
-     * @param string $role User role (e.g., 'helper', 'admin', etc.)
-     * @return bool Success status
-     */
-    public static function sendInvitation($email, $token, $role) {
-        if (self::isVendorMissing()) {
-            error_log("Cannot send invitation: Composer vendor missing");
-            return false;
-        }
-        
-        $subject = "Einladung zum IBC Intranet";
-        
-        // Build registration link
-        $registrationLink = BASE_URL . '/pages/auth/register.php?token=' . urlencode($token);
-        
-        // Build body content
-        $roleNames = [
-            'board_finance' => 'Vorstand Finanzen & Recht',
-            'board_internal' => 'Vorstand Intern',
-            'board_external' => 'Vorstand Extern',
-            'alumni_board' => 'Alumni-Vorstand',
-            'alumni_auditor' => 'Alumni-Finanzprüfer',
-            'manager' => 'Ressortleiter',
-            'head' => 'Ressortleiter',
-            'member' => 'Mitglied',
-            'alumni' => 'Alumni',
-            'candidate' => 'Anwärter'
-        ];
-        $roleDisplay = $roleNames[$role] ?? ucfirst($role);
-        
-        $bodyContent = '<p class="email-text">Hallo,</p>
-        <p class="email-text">du wurdest als <strong>' . htmlspecialchars($roleDisplay) . '</strong> zum IBC Intranet eingeladen.</p>
-        <p class="email-text">Um dein Konto zu erstellen und Zugang zum System zu erhalten, klicke bitte auf den folgenden Button:</p>';
-        
-        // Create call-to-action button
-        $callToAction = '<a href="' . htmlspecialchars($registrationLink) . '" class="button">Jetzt registrieren</a>';
-        
-        $bodyContent .= '<p class="email-text" style="margin-top: 20px; font-size: 14px; color: #6b7280;">Dieser Einladungslink ist nur einmal verwendbar. Falls du Probleme beim Registrieren hast, wende dich bitte an den Vorstand.</p>';
-        
-        // Get complete HTML template
-        $htmlBody = self::getTemplate('Einladung zum IBC Intranet', $bodyContent, $callToAction);
-        
-        // Send email without attachment but with embedded logo (has its own exception handling)
-        return self::sendEmailWithEmbeddedImage($email, $subject, $htmlBody);
-    }
-    
-    /**
      * Send email with attachment and embedded logo using PHPMailer with SMTP
      * 
      * @param string $toEmail Recipient email

@@ -97,6 +97,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+    } else if (isset($_POST['send_bulk_invite'])) {
+        // Validate CSRF
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (!CSRFHandler::validateToken($csrfToken)) {
+            $error = 'Ungültiges CSRF-Token.';
+        } else {
+            $subject = trim($_POST['bulk_subject'] ?? '');
+            $body    = trim($_POST['bulk_body']    ?? '');
+
+            if (empty($subject) || empty($body)) {
+                $error = 'Betreff und Nachrichtentext dürfen nicht leer sein.';
+            } else {
+                $recipients = [];
+
+                // --- Option A: CSV upload ---
+                if (!empty($_FILES['bulk_csv']['tmp_name'])) {
+                    $csvPath = $_FILES['bulk_csv']['tmp_name'];
+                    if (($handle = fopen($csvPath, 'r')) !== false) {
+                        while (($row = fgetcsv($handle)) !== false) {
+                            $email = trim($row[0]);
+                            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                                $name = isset($row[1]) ? trim($row[1]) : '';
+                                $recipients[] = ['email' => $email, 'name' => $name];
+                            }
+                        }
+                        fclose($handle);
+                    }
+                }
+
+                // --- Option B: selected system users ---
+                $selectedIds = $_POST['bulk_user_ids'] ?? [];
+                if (!empty($selectedIds) && is_array($selectedIds)) {
+                    $allUsers = User::getAll();
+                    $idSet = array_flip(array_map('intval', $selectedIds));
+                    foreach ($allUsers as $u) {
+                        if (isset($idSet[(int)$u['id']])) {
+                            $name = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
+                            $recipients[] = ['email' => $u['email'], 'name' => $name];
+                        }
+                    }
+                }
+
+                if (empty($recipients)) {
+                    $error = 'Keine Empfänger ausgewählt. Bitte CSV hochladen oder Benutzer auswählen.';
+                } else {
+                    $sent  = 0;
+                    $failed = 0;
+                    $entraNote = '<p style="margin-top:20px;padding:12px;background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:14px;">'
+                        . '<strong>Hinweis:</strong> Der Login ins IBC Intranet erfolgt ausschließlich über deinen Microsoft-Account (Entra ID). '
+                        . 'Bitte nutze die Schaltfläche „Mit Microsoft anmelden" auf der Login-Seite.</p>';
+
+                    foreach ($recipients as $r) {
+                        $sanitizedBody = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+                        $htmlBody = MailService::getTemplate(
+                            htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
+                            '<p class="email-text">' . $sanitizedBody . '</p>' . $entraNote
+                        );
+                        if (MailService::sendEmail($r['email'], $subject, $htmlBody)) {
+                            $sent++;
+                        } else {
+                            $failed++;
+                            error_log("Bulk invite: failed to send to " . $r['email']);
+                        }
+                    }
+
+                    if ($failed === 0) {
+                        $message = "Einladungen erfolgreich versendet: {$sent} E-Mail(s).";
+                    } else {
+                        $message = "Versandt: {$sent}, Fehlgeschlagen: {$failed}.";
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -179,6 +252,15 @@ ob_start();
                 <span class="relative z-10 flex items-center justify-center">
                     <i class="fab fa-microsoft mr-2"></i>
                     Entra-Benutzer
+                </span>
+            </button>
+            <button 
+                class="tab-button flex-1 py-4 px-6 text-center font-semibold transition-all duration-200 relative overflow-hidden bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                data-tab="bulk-invite"
+            >
+                <span class="relative z-10 flex items-center justify-center">
+                    <i class="fas fa-envelope-open-text mr-2"></i>
+                    Masseneinladungen
                 </span>
             </button>
             <?php endif; ?>
@@ -598,6 +680,184 @@ ob_start();
 <?php endif; ?>
 <!-- End Tab Content: Entra-Benutzer suchen -->
 
+<!-- Tab Content: Masseneinladungen -->
+<?php if (Auth::canManageUsers()):
+    // Collect available templates
+    $templateDir = __DIR__ . '/../../assets/mail_vorlage';
+    $templateFiles = [];
+    foreach (glob($templateDir . '/*.json') as $f) {
+        $templateFiles[] = basename($f, '.json');
+    }
+    sort($templateFiles);
+?>
+<div id="tab-bulk-invite" class="tab-content hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="p-6 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1 flex items-center">
+                <i class="fas fa-envelope-open-text mr-2 text-indigo-600"></i>
+                Masseneinladungen versenden
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Wähle einen Event-Typ aus, passe Betreff und Inhalt an und sende die Einladung an ausgewählte Benutzer oder eine CSV-Liste.
+            </p>
+        </div>
+        <div class="p-6">
+            <form method="POST" enctype="multipart/form-data" id="bulkInviteForm">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(CSRFHandler::getToken(), ENT_QUOTES, 'UTF-8'); ?>">
+
+                <!-- Event type selector -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-calendar-alt mr-1 text-indigo-500"></i>Event-Typ
+                    </label>
+                    <div class="relative">
+                        <select id="eventTemplateSelect"
+                            class="w-full pl-4 pr-10 py-3 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none cursor-pointer transition-all">
+                            <option value="">-- Bitte wählen --</option>
+                            <?php foreach ($templateFiles as $tpl): ?>
+                            <option value="<?php echo htmlspecialchars($tpl); ?>">
+                                <?php echo htmlspecialchars($tpl); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div id="templateLoadStatus" class="hidden mt-2 text-sm text-indigo-600 dark:text-indigo-400 flex items-center">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Vorlage wird geladen…
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="mb-5">
+                    <label for="bulkSubject" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-heading mr-1 text-indigo-500"></i>Betreff
+                    </label>
+                    <input type="text" id="bulkSubject" name="bulk_subject"
+                        class="w-full px-4 py-3 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all"
+                        placeholder="E-Mail Betreff" required>
+                </div>
+
+                <!-- Body -->
+                <div class="mb-5">
+                    <label for="bulkBody" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-align-left mr-1 text-indigo-500"></i>Nachrichtentext
+                    </label>
+                    <textarea id="bulkBody" name="bulk_body" rows="10"
+                        class="w-full px-4 py-3 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all font-mono text-sm"
+                        placeholder="Nachrichtentext eingeben…" required></textarea>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Ein automatischer Hinweis auf den Microsoft Entra Login wird der E-Mail hinzugefügt.
+                    </p>
+                </div>
+
+                <!-- Recipient source tabs -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                        <i class="fas fa-users mr-1 text-indigo-500"></i>Empfänger
+                    </label>
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" id="recipientTabUsers"
+                            class="recipient-tab-btn px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-all">
+                            <i class="fas fa-user-check mr-1"></i>Systembenutzer
+                        </button>
+                        <button type="button" id="recipientTabCsv"
+                            class="recipient-tab-btn px-4 py-2 text-sm font-semibold rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-all">
+                            <i class="fas fa-file-csv mr-1"></i>CSV hochladen
+                        </button>
+                    </div>
+
+                    <!-- System users selection -->
+                    <div id="recipientPanelUsers">
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="bulkUserSearch"
+                                placeholder="Benutzer suchen…"
+                                class="flex-1 px-4 py-2 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all text-sm">
+                            <button type="button" id="selectAllUsers"
+                                class="px-4 py-2 text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+                                Alle auswählen
+                            </button>
+                            <button type="button" id="deselectAllUsers"
+                                class="px-4 py-2 text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+                                Auswahl aufheben
+                            </button>
+                        </div>
+                        <div class="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left w-8"></th>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">E-Mail</th>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">Name</th>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">Rolle</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800" id="bulkUserTableBody">
+                                    <?php foreach ($users as $u): ?>
+                                    <tr class="bulk-user-row hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                        data-email="<?php echo htmlspecialchars(strtolower($u['email'])); ?>"
+                                        data-name="<?php echo htmlspecialchars(strtolower(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''))); ?>">
+                                        <td class="px-4 py-2">
+                                            <input type="checkbox" name="bulk_user_ids[]"
+                                                value="<?php echo (int)$u['id']; ?>"
+                                                class="bulk-user-checkbox w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                        </td>
+                                        <td class="px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">
+                                            <?php echo htmlspecialchars($u['email']); ?>
+                                        </td>
+                                        <td class="px-4 py-2 text-gray-600 dark:text-gray-400">
+                                            <?php echo htmlspecialchars(trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''))); ?>
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-medium">
+                                                <?php echo htmlspecialchars(translateRole($u['role'])); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="bulkSelectedCount">0 Benutzer ausgewählt</p>
+                    </div>
+
+                    <!-- CSV upload -->
+                    <div id="recipientPanelCsv" class="hidden">
+                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                CSV-Datei hochladen (Spalte 1: E-Mail, Spalte 2: Name optional)
+                            </p>
+                            <input type="file" name="bulk_csv" id="bulkCsvInput" accept=".csv,text/csv"
+                                class="block w-full text-sm text-gray-600 dark:text-gray-400
+                                       file:mr-4 file:py-2 file:px-4
+                                       file:rounded-lg file:border-0
+                                       file:text-sm file:font-semibold
+                                       file:bg-indigo-50 file:text-indigo-700
+                                       hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 cursor-pointer">
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            Beispiel: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">max.mustermann@example.com,Max Mustermann</code>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="flex gap-3">
+                    <button type="submit" name="send_bulk_invite"
+                        class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5">
+                        <i class="fas fa-paper-plane mr-2"></i>Einladungen versenden
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<!-- End Tab Content: Masseneinladungen -->
+
 <script>
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -916,6 +1176,118 @@ document.addEventListener('DOMContentLoaded', function() {
         importForm.classList.remove('hidden');
         importForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     };
+});
+</script>
+
+<script>
+// Bulk invite: template loader + recipient selection
+document.addEventListener('DOMContentLoaded', function() {
+    const templateSelect    = document.getElementById('eventTemplateSelect');
+    const loadStatus        = document.getElementById('templateLoadStatus');
+    const subjectInput      = document.getElementById('bulkSubject');
+    const bodyTextarea      = document.getElementById('bulkBody');
+    const userSearchInput   = document.getElementById('bulkUserSearch');
+    const selectAllBtn      = document.getElementById('selectAllUsers');
+    const deselectAllBtn    = document.getElementById('deselectAllUsers');
+    const selectedCount     = document.getElementById('bulkSelectedCount');
+    const recipientTabUsers = document.getElementById('recipientTabUsers');
+    const recipientTabCsv   = document.getElementById('recipientTabCsv');
+    const panelUsers        = document.getElementById('recipientPanelUsers');
+    const panelCsv          = document.getElementById('recipientPanelCsv');
+    const csvInput          = document.getElementById('bulkCsvInput');
+
+    if (!templateSelect) return;
+
+    // Load template via AJAX when a template is selected
+    templateSelect.addEventListener('change', function() {
+        const tpl = this.value;
+        if (!tpl) return;
+
+        loadStatus.classList.remove('hidden');
+
+        fetch('/api/get_mail_template.php?template=' + encodeURIComponent(tpl))
+            .then(r => r.json())
+            .then(data => {
+                loadStatus.classList.add('hidden');
+                if (data.error) {
+                    alert('Fehler beim Laden der Vorlage: ' + data.error);
+                    return;
+                }
+                if (subjectInput)  subjectInput.value  = data.subject || '';
+                if (bodyTextarea)  bodyTextarea.value  = data.content || '';
+            })
+            .catch(() => {
+                loadStatus.classList.add('hidden');
+                alert('Netzwerkfehler beim Laden der Vorlage.');
+            });
+    });
+
+    // Recipient tab switching
+    function activateRecipientTab(tab) {
+        if (tab === 'users') {
+            recipientTabUsers.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-200');
+            recipientTabUsers.classList.add('bg-indigo-600', 'text-white');
+            recipientTabCsv.classList.remove('bg-indigo-600', 'text-white');
+            recipientTabCsv.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-200');
+            panelUsers.classList.remove('hidden');
+            panelCsv.classList.add('hidden');
+            if (csvInput) csvInput.disabled = true;
+        } else {
+            recipientTabCsv.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-200');
+            recipientTabCsv.classList.add('bg-indigo-600', 'text-white');
+            recipientTabUsers.classList.remove('bg-indigo-600', 'text-white');
+            recipientTabUsers.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-200');
+            panelCsv.classList.remove('hidden');
+            panelUsers.classList.add('hidden');
+            if (csvInput) csvInput.disabled = false;
+        }
+    }
+
+    // Disable CSV input by default (users tab is active)
+    if (csvInput) csvInput.disabled = true;
+
+    recipientTabUsers.addEventListener('click', () => activateRecipientTab('users'));
+    recipientTabCsv.addEventListener('click',   () => activateRecipientTab('csv'));
+
+    // User search/filter
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.bulk-user-checkbox:checked').length;
+        if (selectedCount) selectedCount.textContent = checked + ' Benutzer ausgewählt';
+    }
+
+    if (userSearchInput) {
+        userSearchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.bulk-user-row').forEach(row => {
+                const email = row.getAttribute('data-email') || '';
+                const name  = row.getAttribute('data-name')  || '';
+                row.style.display = (email.includes(term) || name.includes(term)) ? '' : 'none';
+            });
+        });
+    }
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.bulk-user-row').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const cb = row.querySelector('.bulk-user-checkbox');
+                    if (cb) cb.checked = true;
+                }
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.bulk-user-checkbox').forEach(cb => { cb.checked = false; });
+            updateSelectedCount();
+        });
+    }
+
+    document.querySelectorAll('.bulk-user-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
 });
 </script>
 

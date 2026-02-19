@@ -692,12 +692,12 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 </a>
                 <?php endif; ?>
                 
-                <!-- Benutzer (All board members who can manage users) -->
+                <!-- Benutzerverwaltung (All board members who can manage users) -->
                 <?php if (Auth::canManageUsers()): ?>
                 <a href="<?php echo asset('pages/admin/users.php'); ?>" 
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/users.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-users-cog w-5 mr-3"></i>
-                    <span>Benutzer</span>
+                    <span>Benutzerverwaltung</span>
                 </a>
                 <?php endif; ?>
 

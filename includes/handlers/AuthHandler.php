@@ -359,14 +359,6 @@ class AuthHandler {
     }
 
     /**
-     * @deprecated Invitation token generation is disabled. Authentication is handled exclusively via Microsoft Entra ID.
-     * @throws \RuntimeException always
-     */
-    public static function generateInvitationToken($email, $role, $createdBy, $validityHours = 168) {
-        throw new \RuntimeException('Manuelle Einladungs-Links sind deaktiviert. Bitte nutzen Sie die Microsoft Entra ID Anmeldung.');
-    }
-
-    /**
      * Log system action
      */
     private static function logSystemAction($userId, $action, $entityType = null, $entityId = null, $details = null) {

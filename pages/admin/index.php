@@ -33,14 +33,6 @@ try {
     ");
     $metrics['active_users_7d'] = $stmt->fetch()['count'] ?? 0;
     
-    // Open invitations
-    $stmt = $userDb->query("
-        SELECT COUNT(*) as count 
-        FROM invitation_tokens 
-        WHERE expires_at > NOW()
-    ");
-    $metrics['open_invitations'] = $stmt->fetch()['count'] ?? 0;
-    
     // Recent errors (24h)
     $stmt = $contentDb->query("
         SELECT COUNT(*) as count 
@@ -336,19 +328,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- Additional Info Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="card p-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Offene Einladungen</h3>
-            <i class="fas fa-envelope text-blue-500"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-            <?php echo number_format($metrics['open_invitations'] ?? 0); ?>
-        </p>
-        <a href="users.php" class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400">
-            Zur Verwaltung →
-        </a>
-    </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     
     <div class="card p-6">
         <div class="flex items-center justify-between mb-3">

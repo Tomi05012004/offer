@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../src/Auth.php';
 require_once __DIR__ . '/../../includes/models/User.php';
 require_once __DIR__ . '/../../includes/helpers.php';
+require_once __DIR__ . '/../../includes/handlers/CSRFHandler.php';
 
 if (!Auth::check() || !Auth::canManageUsers()) {
     header('Location: ../auth/login.php');
@@ -149,6 +150,7 @@ $profilePhotosBasePath = realpath(__DIR__ . '/../../uploads/profile_photos');
 $title = 'Benutzerverwaltung - IBC Intranet';
 ob_start();
 ?>
+<input type="hidden" id="csrf-token" value="<?php echo htmlspecialchars(CSRFHandler::getToken(), ENT_QUOTES, 'UTF-8'); ?>">
 
 <!-- Header Section with Gradient Background -->
 <div class="mb-8 relative overflow-hidden">
@@ -451,14 +453,39 @@ ob_start();
                                     <?php echo htmlspecialchars($entraRole); ?>
                                 </span>
                                 <?php endforeach; ?>
+                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                <div class="mt-1">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 italic">Lokale Rolle:</label>
+                                    <select class="role-select mt-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all"
+                                        data-user-id="<?php echo $user['id']; ?>">
+                                        <?php foreach (Auth::VALID_ROLES as $r): ?>
+                                        <option value="<?php echo htmlspecialchars($r); ?>"<?php echo $r === $user['role'] ? ' selected' : ''; ?>>
+                                            <?php echo htmlspecialchars(translateRole($r)); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <?php else: ?>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 italic mt-1">
                                     Lokale Rolle: <?php echo htmlspecialchars(translateRole($user['role'])); ?>
                                 </span>
+                                <?php endif; ?>
                             <?php else: ?>
+                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                <select class="role-select text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all"
+                                    data-user-id="<?php echo $user['id']; ?>">
+                                    <?php foreach (Auth::VALID_ROLES as $r): ?>
+                                    <option value="<?php echo htmlspecialchars($r); ?>"<?php echo $r === $user['role'] ? ' selected' : ''; ?>>
+                                        <?php echo htmlspecialchars(translateRole($r)); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php else: ?>
                                 <span class="inline-flex items-center px-3 py-1.5 text-sm bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-200 rounded-lg font-semibold shadow-sm">
                                     <i class="fas fa-user-tag mr-2 text-xs"></i>
                                     <?php echo htmlspecialchars(translateRole($user['role'])); ?>
                                 </span>
+                                <?php endif; ?>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 italic flex items-center">
                                     <i class="fas fa-info-circle mr-1.5"></i>Microsoft Entra Rollen nicht verfügbar
                                 </span>
@@ -510,10 +537,10 @@ ob_start();
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center">
                         <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                        <form method="POST" class="inline" onsubmit="return confirm('Bist Du sicher, dass Du diesen Benutzer löschen möchtest?');">
+                        <form method="POST" class="inline" onsubmit="return confirm('Bist Du sicher, dass Du diesen Benutzer löschen möchtest? Das Profil in alumni_profiles wird ebenfalls entfernt.');">
                             <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                            <button type="submit" name="delete_user" class="inline-flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all shadow-sm hover:shadow-md transform hover:scale-105">
-                                <i class="fas fa-trash"></i>
+                            <button type="submit" name="delete_user" class="inline-flex items-center px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all shadow-sm hover:shadow-md transform hover:scale-105 text-sm font-medium">
+                                <i class="fas fa-trash mr-1.5"></i>Benutzer löschen
                             </button>
                         </form>
                         <?php else: ?>
@@ -774,11 +801,52 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-// Role change functionality removed - roles are now managed via Microsoft Entra
-// Users should use the bulk_invite.php tool to assign roles during invitation
+// Role change via AJAX
 document.addEventListener('DOMContentLoaded', function() {
-    // Note: Role dropdowns have been replaced with read-only display
-    console.log('User management running in Microsoft Only mode');
+    const csrfToken = document.getElementById('csrf-token') ? document.getElementById('csrf-token').value : '';
+
+    document.querySelectorAll('.role-select').forEach(function(select) {
+        // Store the current value before any change so we can revert on error
+        select.dataset.originalValue = select.value;
+
+        select.addEventListener('change', function() {
+            const userId        = this.getAttribute('data-user-id');
+            const newRole       = this.value;
+            const originalValue = this.dataset.originalValue;
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('new_role', newRole);
+            formData.append('csrf_token', csrfToken);
+
+            fetch('/api/update_user_role.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(function(data) {
+                if (data.success) {
+                    // Update data-role attribute on the row for filtering
+                    const row = select.closest('tr');
+                    if (row) {
+                        row.setAttribute('data-role', newRole);
+                    }
+                    // Track the new original value after a successful save
+                    select.dataset.originalValue = newRole;
+                    // Brief visual feedback
+                    select.classList.add('ring-2', 'ring-green-400');
+                    setTimeout(function() { select.classList.remove('ring-2', 'ring-green-400'); }, 1500);
+                } else {
+                    alert('Fehler: ' + (data.message || 'Unbekannter Fehler'));
+                    select.value = originalValue;
+                }
+            })
+            .catch(function() {
+                alert('Netzwerkfehler beim Speichern der Rolle.');
+                select.value = originalValue;
+            });
+        });
+    });
 });
 </script>
 

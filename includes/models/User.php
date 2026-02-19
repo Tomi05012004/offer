@@ -112,9 +112,18 @@ class User {
     }
 
     /**
-     * Delete user
+     * Delete user and associated alumni profile
      */
     public static function delete($id) {
+        // Remove alumni profile from content DB first (ignore errors if not present)
+        try {
+            $contentDb = Database::getContentDB();
+            $stmt = $contentDb->prepare("DELETE FROM alumni_profiles WHERE user_id = ?");
+            $stmt->execute([$id]);
+        } catch (Exception $e) {
+            error_log('Failed to delete alumni profile for user ' . $id . ': ' . $e->getMessage());
+        }
+
         $db = Database::getUserDB();
         $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
         return $stmt->execute([$id]);

@@ -541,42 +541,11 @@ class Auth {
     }
     
     /**
-     * Generate invitation token for new user registration
-     * 
-     * @param string $email User email
-     * @param string $role User role
-     * @param int $createdBy ID of user creating the invitation
-     * @return string Generated token
+     * @deprecated Invitation token generation is disabled. Authentication is handled exclusively via Microsoft Entra ID.
+     * @throws \RuntimeException always
      */
     public static function generateInvitationToken($email, $role, $createdBy, $validityHours = 168) {
-        $db = Database::getUserDB();
-        $token = bin2hex(random_bytes(32));
-        $expiresAt = date('Y-m-d H:i:s', time() + ($validityHours * 60 * 60)); // Use provided validity hours
-        
-        $stmt = $db->prepare("INSERT INTO invitation_tokens (token, email, role, created_by, expires_at) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$token, $email, $role, $createdBy, $expiresAt]);
-        
-        // Capture last insert ID immediately after insert
-        $invitationId = $db->lastInsertId();
-        
-        // Log invitation creation if system_logs table exists
-        try {
-            $dbContent = Database::getContentDB();
-            $stmt = $dbContent->prepare("INSERT INTO system_logs (user_id, action, entity_type, entity_id, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $createdBy,
-                'invitation_created',
-                'invitation',
-                $invitationId,
-                "Invitation sent to $email with validity of $validityHours hours",
-                $_SERVER['REMOTE_ADDR'] ?? null,
-                $_SERVER['HTTP_USER_AGENT'] ?? null
-            ]);
-        } catch (Exception $e) {
-            error_log("Failed to log invitation creation: " . $e->getMessage());
-        }
-        
-        return $token;
+        throw new \RuntimeException('Manuelle Einladungs-Links sind deaktiviert. Bitte nutzen Sie die Microsoft Entra ID Anmeldung.');
     }
     
     /**

@@ -17,6 +17,7 @@
     --gradient-select-hover: linear-gradient(to bottom, #ffffff 0%, #f0f7ff 100%);
     
     /* Legacy compatibility variables */
+    --bg-main: #f9fafb; /* Alias for --bg-body */
     --bg-color: #f9fafb; /* Light Gray */
     --text-color: #111827; /* Dark Grey/Black */
     --card-bg: #ffffff; /* White */
@@ -103,6 +104,7 @@
     --border-light: #475569; /* Slate-600 - Lighter borders for emphasis */
     
     /* Legacy compatibility variables */
+    --bg-main: #0a0f1e; /* Alias for --bg-body in dark mode */
     --bg-color: #0a0f1e;
     --text-color: #f8fafc;
     --card-bg: #1a1f2e;
@@ -1011,6 +1013,23 @@ body.dark-mode .to-orange-50 {
 
 body.dark-mode .to-teal-50 {
     --tw-gradient-to: rgba(20, 184, 166, 0.15) !important;
+}
+
+/* Dashboard: Handle Tailwind gradient opacity variants (e.g. to-orange-50/50) */
+body.dark-mode .to-orange-50\/50 {
+    --tw-gradient-to: rgba(249, 115, 22, 0.08) !important;
+}
+
+body.dark-mode .to-orange-50\/30 {
+    --tw-gradient-to: rgba(249, 115, 22, 0.05) !important;
+}
+
+body.dark-mode .to-blue-50\/50 {
+    --tw-gradient-to: rgba(59, 130, 246, 0.08) !important;
+}
+
+body.dark-mode .to-green-50\/60 {
+    --tw-gradient-to: rgba(34, 197, 94, 0.10) !important;
 }
 
 body.dark-mode .from-purple-50 {

@@ -107,9 +107,9 @@ if (!headers_sent()) {
         $csp_directives = [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn-uicons.flaticon.com",
             "img-src 'self' data:",
-            "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+            "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn-uicons.flaticon.com",
             "connect-src 'self'"
         ];
         header("Content-Security-Policy: " . implode("; ", $csp_directives));

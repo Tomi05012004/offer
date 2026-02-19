@@ -132,7 +132,7 @@ ob_start();
 <?php if (!empty($user['prompt_profile_review']) && $user['prompt_profile_review'] == 1): ?>
 <!-- Profile Review Prompt Modal -->
 <div id="profile-review-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all">
+    <div class="rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all" style="background-color: var(--bg-card)">
         <!-- Modal Header -->
         <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
             <div class="flex items-center">
@@ -145,14 +145,14 @@ ob_start();
         
         <!-- Modal Body -->
         <div class="px-6 py-6">
-            <p class="text-gray-700 text-lg mb-6">
+            <p class="text-lg mb-6" style="color: var(--text-main)">
                 Bitte überprüfe deine Daten (besonders E-Mail und Job-Daten), damit wir in Kontakt bleiben können.
             </p>
             
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+            <div class="rounded-lg p-4 mb-6" style="background-color: var(--bg-body); border: 1px solid var(--border-color)">
                 <div class="flex items-start">
                     <i class="fas fa-info-circle text-purple-600 mt-1 mr-3"></i>
-                    <p class="text-sm text-gray-700">
+                    <p class="text-sm" style="color: var(--text-main)">
                         Es ist wichtig, dass deine Kontaktdaten aktuell sind, damit du alle wichtigen Informationen erhältst.
                     </p>
                 </div>
@@ -160,12 +160,12 @@ ob_start();
         </div>
         
         <!-- Modal Footer -->
-        <div class="px-6 py-4 bg-gray-50 flex flex-col sm:flex-row gap-3">
+        <div class="px-6 py-4 flex flex-col sm:flex-row gap-3" style="background-color: var(--bg-body); border-top: 1px solid var(--border-color)">
             <a href="../auth/profile.php" class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
                 <i class="fas fa-user-circle mr-2"></i>
                 Zum Profil
             </a>
-            <button onclick="dismissProfileReviewPrompt()" class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300">
+            <button onclick="dismissProfileReviewPrompt()" class="flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300" style="background-color: var(--border-color); color: var(--text-main)">
                 Später
             </button>
         </div>
@@ -242,15 +242,15 @@ function dismissProfileReviewPrompt() {
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mr-3 shadow-md">
             <i class="fas fa-tachometer-alt text-white text-sm"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800">Schnellübersicht</h2>
+        <h2 class="text-2xl font-bold" style="color: var(--text-main)">Schnellübersicht</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- My Open Tasks Widget -->
         <a href="/pages/inventory/my_rentals.php" class="block group">
-            <div class="card p-7 rounded-2xl bg-gradient-to-br from-white to-orange-50/50 hover:shadow-2xl transition-all duration-300 cursor-pointer border border-orange-100/50">
+            <div class="card p-7 rounded-2xl hover:shadow-2xl transition-all duration-300 cursor-pointer border border-orange-100/50" style="background-color: var(--bg-card)">
                 <div class="mb-5">
                     <p class="text-xs font-semibold uppercase tracking-wider text-orange-500 mb-3">Ausleihen</p>
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Meine offenen Ausleihen</h3>
+                    <h3 class="text-xl font-bold mb-4" style="color: var(--text-main)">Meine offenen Ausleihen</h3>
                     <div class="flex items-center justify-center mb-4">
                         <div class="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform duration-300">
                             <span class="text-4xl font-bold text-white"><?php echo $openTasksCount; ?></span>
@@ -259,16 +259,16 @@ function dismissProfileReviewPrompt() {
                 </div>
                 <?php if ($openTasksCount > 0): ?>
                 <div class="text-center">
-                    <p class="text-gray-700 font-medium mb-4"><?php echo $openTasksCount; ?> offene <?php echo $openTasksCount == 1 ? 'Ausleihe' : 'Ausleihen'; ?></p>
+                    <p class="font-medium mb-4" style="color: var(--text-main)"><?php echo $openTasksCount; ?> offene <?php echo $openTasksCount == 1 ? 'Ausleihe' : 'Ausleihen'; ?></p>
                     <span class="inline-flex items-center text-orange-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
                         Ausleihen verwalten <i class="fas fa-arrow-right ml-2"></i>
                     </span>
                 </div>
                 <?php else: ?>
                 <div class="text-center space-y-3">
-                    <p class="text-gray-700 font-medium text-base">Keine offenen Ausleihen</p>
+                    <p class="font-medium text-base" style="color: var(--text-main)">Keine offenen Ausleihen</p>
                     <div class="pt-3 border-t border-orange-100">
-                        <p class="text-sm text-gray-600 flex items-center justify-center">
+                        <p class="text-sm flex items-center justify-center" style="color: var(--text-muted)">
                             <i class="fas fa-check-circle text-green-500 mr-2"></i>
                             Alle Artikel wurden zurückgegeben
                         </p>
@@ -279,15 +279,15 @@ function dismissProfileReviewPrompt() {
         </a>
 
         <!-- Next Event Widget -->
-        <div class="card p-7 rounded-2xl bg-gradient-to-br from-white to-blue-50/50 hover:shadow-2xl transition-all duration-300 border border-blue-100/50">
+        <div class="card p-7 rounded-2xl hover:shadow-2xl transition-all duration-300 border border-blue-100/50" style="background-color: var(--bg-card)">
             <div class="mb-5">
                 <p class="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-3">Events</p>
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Nächstes Event</h3>
+                <h3 class="text-xl font-bold mb-4" style="color: var(--text-main)">Nächstes Event</h3>
             </div>
             <?php if ($nextEvent): ?>
             <div class="space-y-3">
-                <h4 class="font-semibold text-gray-800 text-lg"><?php echo htmlspecialchars($nextEvent['title']); ?></h4>
-                <p class="text-gray-600">
+                <h4 class="font-semibold text-lg" style="color: var(--text-main)"><?php echo htmlspecialchars($nextEvent['title']); ?></h4>
+                <p style="color: var(--text-muted)">
                     <i class="fas fa-clock mr-2 text-blue-400"></i>
                     <?php echo date('d.m.Y H:i', strtotime($nextEvent['start_time'])); ?> Uhr
                 </p>
@@ -299,7 +299,7 @@ function dismissProfileReviewPrompt() {
             </div>
             <?php else: ?>
             <div class="space-y-4">
-                <p class="text-gray-700 font-medium text-base">Keine anstehenden Events</p>
+                <p class="font-medium text-base" style="color: var(--text-main)">Keine anstehenden Events</p>
                 <div class="pt-3">
                     <a href="../events/index.php" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold text-sm hover:translate-x-1 transition-transform">
                         Events durchsuchen <i class="fas fa-arrow-right ml-2"></i>
@@ -317,25 +317,25 @@ function dismissProfileReviewPrompt() {
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mr-3 shadow-md">
             <i class="fas fa-hands-helping text-white text-sm"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800">Wir suchen Helfer</h2>
+        <h2 class="text-2xl font-bold" style="color: var(--text-main)">Wir suchen Helfer</h2>
     </div>
     
     <?php if (!empty($helperEvents)): ?>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <?php foreach ($helperEvents as $event): ?>
-        <div class="card p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white to-green-50/60 border-l-4 border-green-500">
+        <div class="card p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-l-4 border-green-500" style="background-color: var(--bg-card)">
             <div class="mb-4">
-                <h3 class="text-lg font-bold text-gray-800 mb-2">
+                <h3 class="text-lg font-bold mb-2" style="color: var(--text-main)">
                     <i class="fas fa-calendar-alt text-green-600 mr-2"></i>
                     <?php echo htmlspecialchars($event['title']); ?>
                 </h3>
                 <?php if (!empty($event['description'])): ?>
-                <p class="text-sm text-gray-600 mb-2">
+                <p class="text-sm mb-2" style="color: var(--text-muted)">
                     <?php echo htmlspecialchars(substr($event['description'], 0, 100)) . (strlen($event['description']) > 100 ? '...' : ''); ?>
                 </p>
                 <?php endif; ?>
             </div>
-            <div class="text-sm text-gray-600 mb-3">
+            <div class="text-sm mb-3" style="color: var(--text-muted)">
                 <div class="flex items-center mb-1">
                     <i class="fas fa-clock mr-2 text-green-600"></i>
                     <?php echo date('d.m.Y H:i', strtotime($event['start_time'])); ?> Uhr
@@ -355,9 +355,9 @@ function dismissProfileReviewPrompt() {
         <?php endforeach; ?>
     </div>
     <?php else: ?>
-    <div class="card p-8 rounded-xl shadow-lg text-center bg-gradient-to-br from-white to-gray-50">
+    <div class="card p-8 rounded-xl shadow-lg text-center" style="background-color: var(--bg-card)">
         <i class="fas fa-hands-helping text-4xl mb-3 text-gray-400"></i>
-        <p class="text-gray-600 text-lg">Aktuell werden keine Helfer gesucht</p>
+        <p class="text-lg" style="color: var(--text-muted)">Aktuell werden keine Helfer gesucht</p>
         <a href="../events/index.php" class="inline-flex items-center mt-4 text-green-600 hover:text-green-700 font-semibold">
             Alle Events ansehen <i class="fas fa-arrow-right ml-2"></i>
         </a>
@@ -372,7 +372,7 @@ function dismissProfileReviewPrompt() {
             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-3 shadow-md">
                 <i class="fas fa-poll text-white text-sm"></i>
             </div>
-            <h2 class="text-2xl font-bold text-gray-800">Aktuelle Umfragen</h2>
+            <h2 class="text-2xl font-bold" style="color: var(--text-main)">Aktuelle Umfragen</h2>
         </div>
         <a href="../polls/index.php" class="text-orange-600 hover:text-orange-700 font-semibold text-sm">
             Alle Umfragen <i class="fas fa-arrow-right ml-1"></i>
@@ -402,19 +402,19 @@ function dismissProfileReviewPrompt() {
     ?>
     <div class="grid grid-cols-1 gap-4">
         <?php foreach ($visiblePolls as $poll): ?>
-        <div class="card p-5 rounded-xl shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-white to-orange-50/30">
+        <div class="card p-5 rounded-xl shadow-md hover:shadow-lg transition-all" style="background-color: var(--bg-card)">
             <div class="flex items-start justify-between">
                 <div class="flex-1">
-                    <h3 class="font-bold text-gray-800 text-lg mb-2">
+                    <h3 class="font-bold text-lg mb-2" style="color: var(--text-main)">
                         <i class="fas fa-poll-h text-orange-500 mr-2"></i>
                         <?php echo htmlspecialchars($poll['title']); ?>
                     </h3>
                     <?php if (!empty($poll['description'])): ?>
-                    <p class="text-sm text-gray-600 mb-3">
+                    <p class="text-sm mb-3" style="color: var(--text-muted)">
                         <?php echo htmlspecialchars(substr($poll['description'], 0, 150)) . (strlen($poll['description']) > 150 ? '...' : ''); ?>
                     </p>
                     <?php endif; ?>
-                    <p class="text-xs text-gray-500">
+                    <p class="text-xs" style="color: var(--text-muted)">
                         <i class="fas fa-clock mr-1"></i>
                         Endet am <?php echo date('d.m.Y', strtotime($poll['end_date'])); ?>
                     </p>
@@ -455,9 +455,9 @@ function dismissProfileReviewPrompt() {
         <?php endforeach; ?>
     </div>
     <?php else: ?>
-    <div class="card p-6 rounded-xl shadow-md text-center bg-gradient-to-br from-white to-gray-50">
+    <div class="card p-6 rounded-xl shadow-md text-center" style="background-color: var(--bg-card)">
         <i class="fas fa-poll text-3xl mb-2 text-gray-400"></i>
-        <p class="text-gray-600">Keine aktiven Umfragen für Sie verfügbar</p>
+        <p style="color: var(--text-muted)">Keine aktiven Umfragen für Sie verfügbar</p>
     </div>
     <?php endif; ?>
 </div>
@@ -497,7 +497,7 @@ function hidePollFromDashboard(pollId) {
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mr-3 shadow-md">
             <i class="fas fa-calendar-alt text-white text-sm"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800">Anstehende Events</h2>
+        <h2 class="text-2xl font-bold" style="color: var(--text-main)">Anstehende Events</h2>
     </div>
     
     <div class="grid grid-cols-1 gap-6">
@@ -513,18 +513,18 @@ function hidePollFromDashboard(pollId) {
         
         if (!empty($upcomingEventsForAllUsers)): 
         ?>
-        <div class="card p-6 rounded-xl shadow-lg bg-gradient-to-br from-white to-blue-50">
+        <div class="card p-6 rounded-xl shadow-lg" style="background-color: var(--bg-card)">
             <div class="space-y-4">
                 <?php foreach ($upcomingEventsForAllUsers as $event): ?>
-                <div class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between p-4 rounded-lg shadow-sm hover:shadow-md transition-all" style="background-color: var(--bg-card); border: 1px solid var(--border-color)">
                     <div class="flex-1">
-                        <h3 class="font-bold text-gray-800 mb-1"><?php echo htmlspecialchars($event['title']); ?></h3>
-                        <p class="text-sm text-gray-600">
+                        <h3 class="font-bold mb-1" style="color: var(--text-main)"><?php echo htmlspecialchars($event['title']); ?></h3>
+                        <p class="text-sm" style="color: var(--text-muted)">
                             <i class="fas fa-clock mr-1"></i>
                             <?php echo date('d.m.Y H:i', strtotime($event['start_time'])); ?> Uhr
                         </p>
                         <?php if (!empty($event['location'])): ?>
-                        <p class="text-sm text-gray-500 mt-1">
+                        <p class="text-sm mt-1" style="color: var(--text-muted)">
                             <i class="fas fa-map-marker-alt mr-1"></i>
                             <?php echo htmlspecialchars($event['location']); ?>
                         </p>
@@ -538,9 +538,9 @@ function hidePollFromDashboard(pollId) {
             </div>
         </div>
         <?php else: ?>
-        <div class="card p-8 rounded-xl shadow-lg text-center bg-gradient-to-br from-white to-gray-50">
+        <div class="card p-8 rounded-xl shadow-lg text-center" style="background-color: var(--bg-card)">
             <i class="fas fa-calendar-times text-4xl mb-3 text-gray-400"></i>
-            <p class="text-gray-600 text-lg">Keine anstehenden Events</p>
+            <p class="text-lg" style="color: var(--text-muted)">Keine anstehenden Events</p>
             <a href="../events/index.php" class="inline-flex items-center mt-4 text-blue-600 hover:text-blue-700 font-semibold">
                 Alle Events ansehen <i class="fas fa-arrow-right ml-2"></i>
             </a>

@@ -403,7 +403,9 @@ ob_start();
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Profil</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Benutzer</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Rolle</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Entra-Rollen</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Entra-Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Intranet-Rolle</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Letzter Login</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Aktionen</th>
@@ -471,53 +473,47 @@ ob_start();
                             
                             if (!empty($entraRoles) && is_array($entraRoles)): 
                             ?>
-                                <div class="text-xs text-gray-600 dark:text-gray-300 font-semibold mb-1">
-                                    <i class="fas fa-microsoft mr-1 text-blue-600"></i>Microsoft Entra Rollen:
-                                </div>
                                 <?php foreach ($entraRoles as $entraRole): ?>
                                 <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-800 dark:text-blue-200 rounded-lg font-medium shadow-sm">
                                     <i class="fas fa-user-tag mr-1.5 text-xs"></i>
                                     <?php echo htmlspecialchars($entraRole); ?>
                                 </span>
                                 <?php endforeach; ?>
-                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                <div class="mt-1">
-                                    <label class="text-xs text-gray-500 dark:text-gray-400 italic">Lokale Rolle:</label>
-                                    <select class="role-select mt-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all"
-                                        data-user-id="<?php echo $user['id']; ?>">
-                                        <?php foreach (Auth::VALID_ROLES as $r): ?>
-                                        <option value="<?php echo htmlspecialchars($r); ?>"<?php echo $r === $user['role'] ? ' selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(translateRole($r)); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <?php else: ?>
-                                <span class="text-xs text-gray-500 dark:text-gray-400 italic mt-1">
-                                    Lokale Rolle: <?php echo htmlspecialchars(translateRole($user['role'])); ?>
-                                </span>
-                                <?php endif; ?>
                             <?php else: ?>
-                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                <select class="role-select text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all"
-                                    data-user-id="<?php echo $user['id']; ?>">
-                                    <?php foreach (Auth::VALID_ROLES as $r): ?>
-                                    <option value="<?php echo htmlspecialchars($r); ?>"<?php echo $r === $user['role'] ? ' selected' : ''; ?>>
-                                        <?php echo htmlspecialchars(translateRole($r)); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php else: ?>
-                                <span class="inline-flex items-center px-3 py-1.5 text-sm bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-200 rounded-lg font-semibold shadow-sm">
-                                    <i class="fas fa-user-tag mr-2 text-xs"></i>
-                                    <?php echo htmlspecialchars(translateRole($user['role'])); ?>
-                                </span>
-                                <?php endif; ?>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 italic flex items-center">
-                                    <i class="fas fa-info-circle mr-1.5"></i>Microsoft Entra Rollen nicht verfügbar
+                                    <i class="fas fa-info-circle mr-1.5"></i>Nicht verfügbar
                                 </span>
                             <?php endif; ?>
                         </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <?php $userType = strtolower($user['user_type'] ?? 'member'); ?>
+                        <?php if ($userType === 'guest'): ?>
+                        <span class="inline-flex items-center px-2.5 py-1 text-xs bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/50 dark:to-amber-900/50 text-orange-700 dark:text-orange-300 rounded-lg font-semibold shadow-sm">
+                            <i class="fas fa-user-friends mr-1.5"></i>Gast
+                        </span>
+                        <?php else: ?>
+                        <span class="inline-flex items-center px-2.5 py-1 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-700 dark:text-blue-300 rounded-lg font-semibold shadow-sm">
+                            <i class="fas fa-user mr-1.5"></i>Mitglied
+                        </span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                        <select class="role-select text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all"
+                            data-user-id="<?php echo $user['id']; ?>">
+                            <?php foreach (Auth::VALID_ROLES as $r): ?>
+                            <option value="<?php echo htmlspecialchars($r); ?>"<?php echo $r === $user['role'] ? ' selected' : ''; ?>>
+                                <?php echo htmlspecialchars(translateRole($r)); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php else: ?>
+                        <span class="inline-flex items-center px-3 py-1.5 text-sm bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-200 rounded-lg font-semibold shadow-sm">
+                            <i class="fas fa-user-tag mr-2 text-xs"></i>
+                            <?php echo htmlspecialchars(translateRole($user['role'])); ?>
+                        </span>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex flex-col space-y-2">
@@ -971,13 +967,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Get additional info from row cells
             const cells = row.querySelectorAll('td');
-            const tfaBadge = cells[2].querySelector('.fa-shield-alt');
+            const tfaBadge = cells[5].querySelector('.fa-shield-alt');
             const tfa = tfaBadge ? 'Ja' : 'Nein';
             
-            const verifBadge = cells[2].querySelector('.fa-check-circle');
-            const verif = verifBadge ? 'Ja' : (cells[2].querySelector('.fa-clock') ? 'Nein' : 'N/A');
+            const verifBadge = cells[5].querySelector('.fa-check-circle');
+            const verif = verifBadge ? 'Ja' : (cells[5].querySelector('.fa-clock') ? 'Nein' : 'N/A');
             
-            const login = cells[3].textContent.trim();
+            const login = cells[6].textContent.trim();
             
             csv += `${id},"${email}","${role}","${tfa}","${verif}","${login}"\n`;
         });

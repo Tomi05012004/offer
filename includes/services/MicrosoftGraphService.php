@@ -468,6 +468,54 @@ class MicrosoftGraphService {
     }
     
     /**
+     * Search users in the Azure Tenant by display name or email address
+     * 
+     * @param string $query Search term (name or email)
+     * @return array Array of users with 'id', 'displayName', and 'mail'
+     * @throws Exception If search request fails
+     */
+    public function searchUsers(string $query): array {
+        // Sanitize query to prevent OData injection: strip characters that could
+        // break out of the single-quoted filter value or inject OData operators.
+        $safeQuery = str_replace(["'", '"', '\\', '/', '+', '(', ')'], '', $query);
+
+        $usersUrl = "https://graph.microsoft.com/v1.0/users"
+            . "?\$filter=startswith(displayName,'{$safeQuery}') or startswith(mail,'{$safeQuery}')"
+            . "&\$select=id,displayName,mail"
+            . "&\$top=20";
+
+        try {
+            $response = $this->httpClient->get($usersUrl, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->accessToken,
+                    'Content-Type'  => 'application/json',
+                    'ConsistencyLevel' => 'eventual',
+                ]
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+
+            if (!isset($body['value']) || !is_array($body['value'])) {
+                return [];
+            }
+
+            $users = [];
+            foreach ($body['value'] as $user) {
+                $users[] = [
+                    'id'          => $user['id'] ?? '',
+                    'displayName' => $user['displayName'] ?? '',
+                    'mail'        => $user['mail'] ?? '',
+                ];
+            }
+
+            return $users;
+
+        } catch (GuzzleException $e) {
+            throw new Exception('Failed to search users: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get member groups for the current user (requires user access token)
      * This method uses the /me endpoint and requires a user access token (not service account)
      * 

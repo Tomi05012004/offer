@@ -90,6 +90,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Fehler beim Löschen des Benutzers';
         }
+    } else if (isset($_POST['import_entra_user'])) {
+        $entraId      = trim($_POST['entra_id'] ?? '');
+        $displayName  = trim($_POST['display_name'] ?? '');
+        $entraEmail   = trim($_POST['entra_email'] ?? '');
+        $role         = $_POST['role'] ?? 'member';
+
+        if (empty($entraId) || empty($entraEmail)) {
+            $error = 'Entra-ID und E-Mail sind erforderlich.';
+        } elseif (!filter_var($entraEmail, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Ungültige E-Mail-Adresse.';
+        } elseif (!in_array($role, Auth::VALID_ROLES)) {
+            $error = 'Ungültige Rolle.';
+        } else {
+            // Check if user already exists (by email or azure_oid)
+            $db = Database::getUserDB();
+            $stmt = $db->prepare("SELECT id FROM users WHERE email = ? OR azure_oid = ? LIMIT 1");
+            $stmt->execute([$entraEmail, $entraId]);
+            $existing = $stmt->fetch();
+
+            if ($existing) {
+                $error = 'Ein Benutzer mit dieser E-Mail oder Entra-ID existiert bereits.';
+            } else {
+                // Split displayName into first/last name (best effort)
+                $nameParts = explode(' ', $displayName, 2);
+                $firstName = $nameParts[0] ?? '';
+                $lastName  = $nameParts[1] ?? '';
+
+                // Random password – login is Entra-only, password is never used
+                $randomPassword = bin2hex(random_bytes(32));
+                $passwordHash   = password_hash($randomPassword, HASH_ALGO);
+
+                $isAlumniValidated = ($role === 'alumni') ? 0 : 1;
+
+                $stmt = $db->prepare(
+                    "INSERT INTO users (email, password, first_name, last_name, role, azure_oid, is_alumni_validated, profile_complete)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
+                );
+                if ($stmt->execute([$entraEmail, $passwordHash, $firstName, $lastName, $role, $entraId, $isAlumniValidated])) {
+                    $message = 'Entra-Benutzer "' . htmlspecialchars($displayName) . '" erfolgreich hinzugefügt.';
+                } else {
+                    $error = 'Fehler beim Speichern des Benutzers.';
+                }
+            }
+        }
     }
 }
 
@@ -175,6 +219,15 @@ ob_start();
                 <span class="relative z-10 flex items-center justify-center">
                     <i class="fas fa-envelope mr-2"></i>
                     Einladungen
+                </span>
+            </button>
+            <button 
+                class="tab-button flex-1 py-4 px-6 text-center font-semibold transition-all duration-200 relative overflow-hidden bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                data-tab="entra-search"
+            >
+                <span class="relative z-10 flex items-center justify-center">
+                    <i class="fab fa-microsoft mr-2"></i>
+                    Entra-Benutzer
                 </span>
             </button>
             <?php endif; ?>
@@ -486,6 +539,99 @@ ob_start();
 <?php endif; ?>
 <!-- End Tab Content: Invitations -->
 
+<!-- Tab Content: Entra-Benutzer suchen -->
+<?php if ($canManageInvitations): ?>
+<div id="tab-entra-search" class="tab-content hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1 flex items-center">
+                <i class="fab fa-microsoft mr-2 text-blue-600"></i>
+                Benutzer aus Microsoft Entra hinzufügen
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Suche nach Benutzern im Azure-Tenant (per Name oder E-Mail) und füge sie dem Intranet hinzu.
+                Der Login erfolgt ausschließlich über Microsoft Entra – es wird kein Passwort benötigt.
+            </p>
+        </div>
+        <div class="p-6">
+            <!-- Search field -->
+            <div class="flex gap-3 mb-6">
+                <div class="flex-1 relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input
+                        type="text"
+                        id="entraSearchInput"
+                        placeholder="Name oder E-Mail eingeben (mind. 2 Zeichen)..."
+                        class="w-full pl-11 pr-4 py-3 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white transition-all"
+                    >
+                </div>
+                <button
+                    id="entraSearchBtn"
+                    type="button"
+                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-md transition-all duration-200"
+                >
+                    <i class="fas fa-search mr-2"></i>Suchen
+                </button>
+            </div>
+
+            <!-- Search status / spinner -->
+            <div id="entraSearchStatus" class="hidden mb-4 text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Suche läuft...
+            </div>
+
+            <!-- Results -->
+            <div id="entraSearchResults" class="hidden">
+                <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Suchergebnisse</h4>
+                <div id="entraResultsList" class="space-y-2"></div>
+            </div>
+
+            <!-- Import form (hidden, filled by JS) -->
+            <form id="entraImportForm" method="POST" class="hidden mt-6 p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                <input type="hidden" name="entra_id" id="importEntraId">
+                <input type="hidden" name="display_name" id="importDisplayName">
+                <input type="hidden" name="entra_email" id="importEntraEmail">
+                <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-user-plus mr-2 text-green-600"></i>Benutzer hinzufügen
+                </h4>
+                <div class="mb-4 p-4 bg-white dark:bg-gray-700 rounded-lg border border-green-200 dark:border-green-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                            <i class="fab fa-microsoft text-white"></i>
+                        </div>
+                        <div>
+                            <div id="importPreviewName" class="font-semibold text-gray-900 dark:text-gray-100"></div>
+                            <div id="importPreviewEmail" class="text-sm text-gray-500 dark:text-gray-400"></div>
+                            <div id="importPreviewId" class="text-xs text-gray-400 dark:text-gray-500 font-mono"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Rolle im Intranet</label>
+                    <div class="relative">
+                        <select name="role" class="w-full pl-4 pr-4 py-3 bg-white border-2 border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <?php foreach (Auth::VALID_ROLES as $role): ?>
+                            <option value="<?php echo htmlspecialchars($role); ?>"><?php echo htmlspecialchars(translateRole($role)); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" name="import_entra_user" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md transition-all duration-200">
+                        <i class="fas fa-user-plus mr-2"></i>Hinzufügen
+                    </button>
+                    <button type="button" id="cancelImport" class="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold transition-all duration-200">
+                        Abbrechen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<!-- End Tab Content: Entra-Benutzer suchen -->
+
 <script>
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -633,6 +779,118 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Note: Role dropdowns have been replaced with read-only display
     console.log('User management running in Microsoft Only mode');
+});
+</script>
+
+<script>
+// Entra user search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput  = document.getElementById('entraSearchInput');
+    const searchBtn    = document.getElementById('entraSearchBtn');
+    const statusEl     = document.getElementById('entraSearchStatus');
+    const resultsEl    = document.getElementById('entraSearchResults');
+    const resultsList  = document.getElementById('entraResultsList');
+    const importForm   = document.getElementById('entraImportForm');
+    const cancelBtn    = document.getElementById('cancelImport');
+
+    if (!searchInput) return; // Tab not rendered (no permission)
+
+    let searchTimer = null;
+
+    function doSearch() {
+        const q = searchInput.value.trim();
+        if (q.length < 2) {
+            resultsEl.classList.add('hidden');
+            return;
+        }
+
+        statusEl.classList.remove('hidden');
+        resultsEl.classList.add('hidden');
+        importForm.classList.add('hidden');
+
+        fetch('/api/search_entra_users.php?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(data => {
+                statusEl.classList.add('hidden');
+                if (data.error) {
+                    resultsList.innerHTML = '<div class="text-red-600 dark:text-red-400 text-sm p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">'
+                        + '<i class="fas fa-exclamation-circle mr-2"></i>' + escapeHtml(data.error) + '</div>';
+                    resultsEl.classList.remove('hidden');
+                    return;
+                }
+                const users = data.users || [];
+                if (users.length === 0) {
+                    resultsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-sm p-3 italic">Keine Benutzer gefunden.</div>';
+                } else {
+                    resultsList.innerHTML = users.map(u => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-all">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                                    <i class="fab fa-microsoft text-white text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm">${escapeHtml(u.displayName || '(kein Name)')}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(u.mail || '(keine E-Mail)')}</div>
+                                    <div class="text-xs text-gray-400 dark:text-gray-500 font-mono">${escapeHtml(u.id)}</div>
+                                </div>
+                            </div>
+                            <button type="button"
+                                class="ml-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                                data-id="${escapeHtml(u.id)}"
+                                data-name="${escapeHtml(u.displayName || '')}"
+                                data-email="${escapeHtml(u.mail || '')}"
+                                onclick="selectEntraUser(this)"
+                            >
+                                <i class="fas fa-plus mr-1"></i>Auswählen
+                            </button>
+                        </div>`).join('');
+                }
+                resultsEl.classList.remove('hidden');
+            })
+            .catch(() => {
+                statusEl.classList.add('hidden');
+                resultsList.innerHTML = '<div class="text-red-600 dark:text-red-400 text-sm p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">'
+                    + '<i class="fas fa-exclamation-circle mr-2"></i>Netzwerkfehler bei der Suche.</div>';
+                resultsEl.classList.remove('hidden');
+            });
+    }
+
+    searchBtn.addEventListener('click', doSearch);
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+    });
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(doSearch, 400);
+    });
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            importForm.classList.add('hidden');
+        });
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(String(str)));
+        return div.innerHTML;
+    }
+
+    window.selectEntraUser = function(btn) {
+        const id    = btn.getAttribute('data-id');
+        const name  = btn.getAttribute('data-name');
+        const email = btn.getAttribute('data-email');
+
+        document.getElementById('importEntraId').value      = id;
+        document.getElementById('importDisplayName').value  = name;
+        document.getElementById('importEntraEmail').value   = email;
+        document.getElementById('importPreviewName').textContent  = name || '(kein Name)';
+        document.getElementById('importPreviewEmail').textContent = email || '(keine E-Mail)';
+        document.getElementById('importPreviewId').textContent    = 'Entra-ID: ' + id;
+
+        importForm.classList.remove('hidden');
+        importForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
 });
 </script>
 

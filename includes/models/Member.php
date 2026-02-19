@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../database.php';
 require_once __DIR__ . '/Alumni.php';
+require_once __DIR__ . '/../../src/Auth.php';
 
 class Member {
     
@@ -138,6 +139,31 @@ class Member {
                 $profile['entra_roles'] = $user['entra_roles'] ?? null;
                 $profile['job_title'] = $user['job_title'] ?? null;
                 $profile['user_created_at'] = $user['created_at'];
+                
+                // Resolve display_role: prefer Entra display names, fall back to internal role label
+                $displayRole = null;
+                if (!empty($user['entra_roles'])) {
+                    $entraRolesArray = json_decode($user['entra_roles'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($entraRolesArray) && !empty($entraRolesArray)) {
+                        $displayNames = [];
+                        foreach ($entraRolesArray as $entraRole) {
+                            if (is_array($entraRole) && isset($entraRole['displayName'])) {
+                                // displayName is already human-readable from Microsoft Graph
+                                $displayNames[] = $entraRole['displayName'];
+                            } elseif (is_array($entraRole) && isset($entraRole['id'])) {
+                                // Translate Entra role ID (GUID) to German label
+                                $displayNames[] = Auth::getRoleLabel($entraRole['id']);
+                            } elseif (is_string($entraRole)) {
+                                // Legacy string format – may be a GUID or a display name
+                                $displayNames[] = Auth::getRoleLabel($entraRole);
+                            }
+                        }
+                        if (!empty($displayNames)) {
+                            $displayRole = implode(', ', $displayNames);
+                        }
+                    }
+                }
+                $profile['display_role'] = $displayRole ?? Auth::getRoleLabel($user['role']);
                 
                 $result[] = $profile;
             }

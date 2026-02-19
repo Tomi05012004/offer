@@ -608,13 +608,21 @@ class Auth {
             'board_internal' => 'Vorstand Intern'
         ];
         
-        // Return label if exists, otherwise log error and return formatted role
-        if (!isset($roleLabels[$role])) {
-            error_log("Warning: Unknown role '$role' passed to getRoleLabel()");
-            return ucwords(str_replace('_', ' ', $role));
+        // Return label if exists for internal role key
+        if (isset($roleLabels[$role])) {
+            return $roleLabels[$role];
         }
         
-        return $roleLabels[$role];
+        // Check if $role is an Entra role ID (GUID) present in ROLE_MAPPING
+        if (defined('ROLE_MAPPING') && is_array(ROLE_MAPPING)) {
+            $reverseMapping = array_flip(ROLE_MAPPING);
+            if (isset($reverseMapping[$role]) && isset($roleLabels[$reverseMapping[$role]])) {
+                return $roleLabels[$reverseMapping[$role]];
+            }
+        }
+        
+        error_log("Warning: Unknown role '$role' passed to getRoleLabel()");
+        return ucwords(str_replace('_', ' ', $role));
     }
     
     /**

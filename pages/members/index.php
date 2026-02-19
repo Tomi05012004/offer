@@ -177,33 +177,21 @@ ob_start();
                     'candidate' => 'Anwärter'
                 ];
                 
-                // Display Entra role if available, otherwise use internal role mapping
+                // Use display_role computed by Member::getAllActive() (prefers Entra display names)
                 $displayRole = '';
                 $badgeClass = '';
                 
                 if (!empty($member['entra_roles'])) {
-                    // Entra roles are stored as JSON array, decode and display
-                    $entraRolesArray = json_decode($member['entra_roles'], true);
-                    if (is_array($entraRolesArray) && !empty($entraRolesArray)) {
-                        // Sanitize each role before joining to prevent XSS
-                        $sanitizedRoles = array_map('htmlspecialchars', $entraRolesArray);
-                        $displayRole = implode(', ', $sanitizedRoles);
-                    } else {
-                        // If JSON decode failed or empty, log error and use as-is (might be a string)
-                        if (json_last_error() !== JSON_ERROR_NONE) {
-                            error_log("Failed to decode entra_roles for member: " . json_last_error_msg());
-                        }
-                        $displayRole = htmlspecialchars($member['entra_roles']);
-                    }
+                    $displayRole = htmlspecialchars($member['display_role']);
                     $badgeClass = 'bg-purple-100 text-purple-800 border-purple-300';
                 } elseif (!empty($member['job_title'])) {
                     // Use job title from Microsoft Entra if available
-                    $displayRole = $member['job_title'];
+                    $displayRole = htmlspecialchars($member['job_title']);
                     $badgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
                 } else {
-                    // Fall back to internal role mapping
+                    // Fall back to display_role (translated internal role label)
                     $badgeClass = $roleBadgeColors[$member['role']] ?? 'bg-gray-100 text-gray-800 border-gray-300';
-                    $displayRole = $roleNames[$member['role']] ?? ucfirst($member['role']);
+                    $displayRole = htmlspecialchars($member['display_role']);
                 }
                 
                 // Generate initials for fallback

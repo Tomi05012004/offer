@@ -274,10 +274,10 @@ class AuthHandler {
     /**
      * Check if user is admin (general system access for Logs, Stats, User Management)
      * 
-     * @return bool True if user has any board role (board_finance, board_internal, board_external)
+     * @return bool True if user has any board role or alumni_board or alumni_auditor
      */
     public static function isAdmin() {
-        return self::isBoard();
+        return Auth::canManageUsers();
     }
 
     /**
@@ -325,10 +325,10 @@ class AuthHandler {
     /**
      * Check if user can manage users
      * 
-     * @return bool True if user has any board role
+     * @return bool True if user has any board role, alumni_board, or alumni_auditor
      */
     public static function canManageUsers() {
-        return self::isBoard();
+        return Auth::canManageUsers();
     }
     
     /**

@@ -120,7 +120,6 @@ Key settings:
 
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
 - [ROLE_CONFIGURATION.md](ROLE_CONFIGURATION.md) - Microsoft Entra ID role configuration and reference
-- [sql/SCHEMA_CHANGES.md](sql/SCHEMA_CHANGES.md) - Database schema changes
 - [md/SQL_CONSOLIDATION_README.md](md/SQL_CONSOLIDATION_README.md) - SQL migration guide
 - [includes/services/README.md](includes/services/README.md) - Service integrations
 

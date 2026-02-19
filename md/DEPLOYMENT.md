@@ -119,7 +119,6 @@ For issues or questions:
 
 ## Related Documentation
 
-- `sql/SCHEMA_CHANGES.md` - Detailed schema changes
 - `md/SQL_CONSOLIDATION_README.md` - SQL migration guide
 - `md/EVENT_FINANCIAL_STATS_README.md` - Financial stats feature
 - `md/PROFILE_REMINDERS_README.md` - Profile reminders feature

@@ -765,7 +765,7 @@ ob_start();
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aktueller Arbeitgeber</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aktueller Arbeitgeber (optional)</label>
                         <input 
                             type="text" 
                             name="company" 
@@ -776,7 +776,7 @@ ob_start();
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Position</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Position (optional)</label>
                         <input 
                             type="text" 
                             name="position" 

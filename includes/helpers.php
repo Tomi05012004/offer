@@ -4,6 +4,24 @@
  */
 
 /**
+ * Initialize PHP session with secure parameters
+ * Only starts the session if it has not been started yet
+ */
+function init_session() {
+    if (session_status() === PHP_SESSION_NONE) {
+        $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ]);
+        session_start();
+    }
+}
+
+/**
  * Get base URL path
  */
 function getBasePath() {

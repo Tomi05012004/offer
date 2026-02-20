@@ -138,6 +138,13 @@ try {
         }
     }
 
+    // Sync Entra data (displayName, mail, group memberships, role) on every login.
+    // Called here for existing users; new users are synced inside completeMicrosoftLogin
+    // after their record is created.
+    if ($existingUser && $azureOid) {
+        AuthHandler::syncEntraData($existingUser['id'], $claims, $azureOid);
+    }
+
     // Complete the login process (role mapping, user create/update, session setup)
     AuthHandler::completeMicrosoftLogin($claims, $existingUser);
 

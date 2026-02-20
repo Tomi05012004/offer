@@ -598,6 +598,7 @@ class AuthHandler {
             'Ehrenmitglied' => 'honorary_member',
             // Capitalized versions with space (alternative Group display names - backward compatibility)
             'Vorstand Finanzen' => 'board_finance',
+            'Vorstand Finanzen und Recht' => 'board_finance',
             'Vorstand Intern' => 'board_internal',
             'Vorstand Extern' => 'board_external',
             'Alumni Vorstand' => 'alumni_board',

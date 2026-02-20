@@ -20,7 +20,7 @@ if (!Auth::check()) {
 // Only board_finance members can mark invoices as paid
 if (!Auth::canManageInvoices()) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Keine Berechtigung - nur Vorstand Finanzen & Recht']);
+    echo json_encode(['success' => false, 'error' => 'Keine Berechtigung - nur Vorstand Finanzen und Recht']);
     exit;
 }
 

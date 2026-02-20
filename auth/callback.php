@@ -77,9 +77,34 @@ try {
         die('Token-Fehler beim Austausch des Autorisierungscodes: ' . $tokenEx->getMessage());
     }
 
-    // Get resource owner (user) details and claims
+    // Get resource owner (user) details and claims from Graph API
     $resourceOwner = $provider->getResourceOwner($accessToken);
     $claims = $resourceOwner->toArray();
+
+    // FIX: Extract JWT claims (Roles, OID, UPN) from the ID token
+    $idToken = $accessToken->getValues()['id_token'] ?? null;
+    if ($idToken) {
+        $tokenParts = explode('.', $idToken);
+        if (count($tokenParts) === 3) {
+            // Decode the payload part of the JWT safely
+            // Note: The id_token is received directly from Microsoft's token endpoint
+            // over a server-side HTTPS connection, so it is implicitly trusted.
+            $jwtPayload = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1]));
+            if ($jwtPayload === false || $jwtPayload === '') {
+                error_log('[OAuth] Failed to base64-decode the id_token payload.');
+            } else {
+                $jwtClaims = json_decode($jwtPayload, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    error_log('[OAuth] Failed to JSON-decode the id_token payload: ' . json_last_error_msg());
+                }
+            }
+
+            if (is_array($jwtClaims)) {
+                // Merge the JWT claims (which contain 'roles', 'oid', 'preferred_username') into the existing claims
+                $claims = array_merge($claims, $jwtClaims);
+            }
+        }
+    }
 
     // Extract azure_oid from the oid or sub claim
     $azureOid  = $claims['oid'] ?? $claims['sub'] ?? null;

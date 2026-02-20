@@ -615,7 +615,7 @@ ob_start();
                                 'Alumni' => 'Alumni',
                                 'Alumni_Vorstand' => 'Alumni-Vorstand',
                                 'Alumni_Finanz' => 'Alumni-Finanzprüfer',
-                                'Vorstand_Finanzen' => 'Vorstand Finanzen',
+                                'Vorstand_Finanzen' => 'Vorstand Finanzen und Recht',
                                 'Vorstand_Intern' => 'Vorstand Intern',
                                 'Vorstand_Extern' => 'Vorstand Extern'
                             ];

@@ -102,7 +102,7 @@ ob_start();
                     <option value="alumni" <?php echo $roleFilter === 'alumni' ? 'selected' : ''; ?>>Alumni</option>
                     <option value="alumni_board" <?php echo $roleFilter === 'alumni_board' ? 'selected' : ''; ?>>Alumni-Vorstand</option>
                     <option value="alumni_auditor" <?php echo $roleFilter === 'alumni_auditor' ? 'selected' : ''; ?>>Alumni-Finanzprüfer</option>
-                    <option value="board_finance" <?php echo $roleFilter === 'board_finance' ? 'selected' : ''; ?>>Vorstand Finanzen</option>
+                    <option value="board_finance" <?php echo $roleFilter === 'board_finance' ? 'selected' : ''; ?>>Vorstand Finanzen und Recht</option>
                     <option value="board_internal" <?php echo $roleFilter === 'board_internal' ? 'selected' : ''; ?>>Vorstand Intern</option>
                     <option value="board_external" <?php echo $roleFilter === 'board_external' ? 'selected' : ''; ?>>Vorstand Extern</option>
                 </select>

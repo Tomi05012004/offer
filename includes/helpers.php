@@ -153,7 +153,7 @@ function asset($path) {
 function translateRole($role) {
     $roleTranslations = [
         'admin' => 'Administrator',
-        'board_finance' => 'Vorstand Finanzen & Recht',
+        'board_finance' => 'Vorstand Finanzen und Recht',
         'board_internal' => 'Vorstand Intern',
         'board_external' => 'Vorstand Extern',
         'head' => 'Ressortleiter',
@@ -181,7 +181,7 @@ function translateAzureRole($azureRole) {
         'anwaerter' => 'Anwärter',
         'mitglied' => 'Mitglied',
         'ressortleiter' => 'Ressortleiter',
-        'vorstand_finanzen' => 'Vorstand Finanzen',
+        'vorstand_finanzen' => 'Vorstand Finanzen und Recht',
         'vorstand_intern' => 'Vorstand Intern',
         'vorstand_extern' => 'Vorstand Extern',
         'alumni' => 'Alumni',

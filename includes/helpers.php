@@ -15,7 +15,7 @@ function init_session() {
             'path'     => '/',
             'secure'   => $isHttps,
             'httponly' => true,
-            'samesite' => 'Strict',
+            'samesite' => 'Lax',
         ]);
         session_start();
     }

@@ -38,7 +38,7 @@ function _env($key, $default = '') {
 
 // Application Settings
 if (!defined('BASE_URL')) {
-    define('BASE_URL', _env('BASE_URL', ''));
+    define('BASE_URL', rtrim(_env('BASE_URL', ''), '/'));
 }
 define('ENVIRONMENT', _env('ENVIRONMENT', 'production'));
 

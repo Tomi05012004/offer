@@ -174,7 +174,7 @@ ob_start();
                 </button>
                 <a 
                     href="<?php echo asset('pages/dashboard/index.php'); ?>"
-                    class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all text-center"
+                    class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all text-center no-underline"
                 >
                     Abbrechen
                 </a>

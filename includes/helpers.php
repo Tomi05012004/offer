@@ -9,11 +9,10 @@
  */
 function init_session() {
     if (session_status() === PHP_SESSION_NONE) {
-        $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
-            'secure'   => $isHttps,
+            'secure'   => true,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);

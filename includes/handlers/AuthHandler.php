@@ -898,34 +898,18 @@ class AuthHandler {
             // Don't throw - allow login to proceed even if photo sync fails
         }
         
-        // Set session variables
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['user_email'] = $email;
-        $_SESSION['user_role'] = $roleName;
-        $_SESSION['authenticated'] = true;
-        $_SESSION['last_activity'] = time();
-        
         // Check if profile is complete and 2FA status
         $stmt = $db->prepare("SELECT profile_complete, tfa_enabled FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $userCheck = $stmt->fetch();
-        if ($userCheck && intval($userCheck['profile_complete']) === 0) {
-            $_SESSION['profile_incomplete'] = true;
-        } else {
-            $_SESSION['profile_incomplete'] = false;
-        }
-        
-        // Check if 2FA is enabled
+
+        // Check if 2FA is enabled - do this BEFORE setting authenticated session
         if ($userCheck && intval($userCheck['tfa_enabled']) === 1) {
-            // Store pending authentication state
+            // Store pending authentication state (without granting full access)
             $_SESSION['pending_2fa_user_id'] = $userId;
             $_SESSION['pending_2fa_email'] = $email;
             $_SESSION['pending_2fa_role'] = $roleName;
-            // Clear authenticated flag until 2FA is verified
-            unset($_SESSION['authenticated']);
-            unset($_SESSION['user_id']);
-            unset($_SESSION['user_email']);
-            unset($_SESSION['user_role']);
+            $_SESSION['pending_2fa_profile_complete'] = $userCheck['profile_complete'] ?? 1;
             
             // Log 2FA required
             self::logSystemAction($userId, 'login_2fa_required', 'user', $userId, 'Microsoft login successful, 2FA verification required');
@@ -934,6 +918,19 @@ class AuthHandler {
             $verify2faUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/auth/verify_2fa.php' : '/pages/auth/verify_2fa.php';
             header('Location: ' . $verify2faUrl);
             exit;
+        }
+
+        // Set session variables (only after confirming 2FA is not required)
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_email'] = $email;
+        $_SESSION['user_role'] = $roleName;
+        $_SESSION['authenticated'] = true;
+        $_SESSION['last_activity'] = time();
+        
+        if ($userCheck && intval($userCheck['profile_complete']) === 0) {
+            $_SESSION['profile_incomplete'] = true;
+        } else {
+            $_SESSION['profile_incomplete'] = false;
         }
         
         // Regenerate session ID to prevent session fixation attacks (mirrors Auth::createSession())

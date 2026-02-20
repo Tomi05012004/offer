@@ -63,22 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             $message = 'Einstellungen erfolgreich gespeichert';
-        } else if (isset($_POST['update_security_settings'])) {
-            $sessionTimeout = intval($_POST['session_timeout'] ?? 3600);
-            $maxLoginAttempts = intval($_POST['max_login_attempts'] ?? 5);
-            $logRetentionDays = intval($_POST['log_retention_days'] ?? 365);
-            
-            $stmt = $db->prepare("
-                INSERT INTO system_settings (setting_key, setting_value, updated_by) 
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by)
-            ");
-            
-            $stmt->execute(['session_timeout', $sessionTimeout, $_SESSION['user_id']]);
-            $stmt->execute(['max_login_attempts', $maxLoginAttempts, $_SESSION['user_id']]);
-            $stmt->execute(['log_retention_days', $logRetentionDays, $_SESSION['user_id']]);
-            
-            $message = 'Sicherheitseinstellungen erfolgreich gespeichert';
         }
     } catch (Exception $e) {
         $error = 'Fehler beim Speichern: ' . $e->getMessage();
@@ -101,9 +85,6 @@ $siteName = getSetting($db, 'site_name', 'IBC Intranet');
 $siteDescription = getSetting($db, 'site_description', '');
 $maintenanceMode = getSetting($db, 'maintenance_mode', '0');
 $allowRegistration = getSetting($db, 'allow_registration', '1');
-$sessionTimeout = getSetting($db, 'session_timeout', '3600');
-$maxLoginAttempts = getSetting($db, 'max_login_attempts', '5');
-$logRetentionDays = getSetting($db, 'log_retention_days', '365');
 
 $title = 'Systemeinstellungen - IBC Intranet';
 ob_start();
@@ -192,71 +173,6 @@ ob_start();
             <button type="submit" name="update_system_settings" class="btn-primary">
                 <i class="fas fa-save mr-2"></i>
                 Einstellungen speichern
-            </button>
-        </div>
-    </form>
-</div>
-
-<!-- Security Settings -->
-<div class="card p-6 mb-6">
-    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-        <i class="fas fa-shield-alt text-red-600 mr-2"></i>
-        Sicherheitseinstellungen
-    </h2>
-    
-    <form method="POST" class="space-y-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Session Timeout (Sekunden)
-            </label>
-            <input 
-                type="number" 
-                name="session_timeout" 
-                value="<?php echo htmlspecialchars($sessionTimeout); ?>"
-                min="300"
-                max="86400"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Standard: 3600 Sekunden (1 Stunde)
-            </p>
-        </div>
-        
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Max. Login-Versuche
-            </label>
-            <input 
-                type="number" 
-                name="max_login_attempts" 
-                value="<?php echo htmlspecialchars($maxLoginAttempts); ?>"
-                min="3"
-                max="10"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            >
-        </div>
-        
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Log-Aufbewahrung (Tage)
-            </label>
-            <input 
-                type="number" 
-                name="log_retention_days" 
-                value="<?php echo htmlspecialchars($logRetentionDays); ?>"
-                min="30"
-                max="730"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Legt fest, wie lange Logs in der Datenbank gespeichert werden
-            </p>
-        </div>
-        
-        <div class="pt-4">
-            <button type="submit" name="update_security_settings" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
-                <i class="fas fa-save mr-2"></i>
-                Sicherheitseinstellungen speichern
             </button>
         </div>
     </form>

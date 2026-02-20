@@ -582,6 +582,12 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                     </div>
                 </div>
 
+                <!-- Features Section Divider -->
+                <div class="my-3 mx-4">
+                    <div class="border-t border-white/10"></div>
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-white/40 mt-3 px-2 text-left">Features</p>
+                </div>
+
                 <!-- Blog (All) -->
                 <a href="<?php echo asset('pages/blog/index.php'); ?>" 
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/blog/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
@@ -795,30 +801,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 }
             }
             
-            // Generate time-based greeting
-            $greetingTimezone = new DateTimeZone('Europe/Berlin');
-            $greetingNow = new DateTime('now', $greetingTimezone);
-            $greetingHour = (int)$greetingNow->format('H');
-            if ($greetingHour >= 5 && $greetingHour < 12) {
-                $greeting = 'Guten Morgen';
-            } elseif ($greetingHour >= 12 && $greetingHour < 18) {
-                $greeting = 'Guten Tag';
-            } else {
-                $greeting = 'Guten Abend';
-            }
-
-            if (!empty($firstname) && !empty($lastname)) {
-                $greetingName = $firstname . ' ' . $lastname;
-            } elseif (!empty($firstname)) {
-                $greetingName = $firstname;
-            } elseif (!empty($lastname)) {
-                $greetingName = $lastname;
-            } else {
-                // Derive name from email username using getDisplayName()
-                $emailUsername = strpos($email, '@') !== false ? explode('@', $email)[0] : $email;
-                $greetingName = Auth::getDisplayName($emailUsername);
-            }
-            
             // Generate initials with proper fallbacks
             if (!empty($firstname) && !empty($lastname)) {
                 $initials = strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
@@ -832,8 +814,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 $initials = 'U';
             }
             ?>
-            <!-- Greeting -->
-            <p class='text-xs text-white/70 mb-3 px-1'><?php echo htmlspecialchars($greeting . ', ' . $greetingName . '!'); ?></p>
 
             <!-- User Info -->
             <div class='flex items-center gap-3 mb-5'>

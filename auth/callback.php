@@ -99,6 +99,22 @@ try {
         $existingUser = $stmt->fetch() ?: null;
     }
 
+    // Fallback for guest users: if not found by azure_oid, try matching via the 'mail' claim
+    // (Microsoft returns a cryptic UPN for guests, but 'mail' contains their real e-mail address)
+    if (!$existingUser && !empty($claims['mail'])) {
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$claims['mail']]);
+        $existingUser = $stmt->fetch() ?: null;
+
+        // Immediately store the azure_oid so future logins are faster and unambiguous.
+        // Only update when azure_oid is still NULL to avoid race-condition overwrites.
+        if ($existingUser && $azureOid) {
+            $updateStmt = $db->prepare("UPDATE users SET azure_oid = ? WHERE id = ? AND azure_oid IS NULL");
+            $updateStmt->execute([$azureOid, $existingUser['id']]);
+            error_log(sprintf("[OAuth] Stored azure_oid %s for user id %d (matched via mail claim)", $azureOid, $existingUser['id']));
+        }
+    }
+
     // Complete the login process (role mapping, user create/update, session setup)
     AuthHandler::completeMicrosoftLogin($claims, $existingUser);
 

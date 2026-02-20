@@ -38,73 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Load links from DB
 $links = [];
-$dbAvailable = false;
 try {
     $links = Link::getAll();
-    $dbAvailable = true;
 } catch (Exception $e) {
-    // Table doesn't exist yet – use predefined fallback links
-}
-
-if (!$dbAvailable || empty($links)) {
-    $links = [
-        [
-            'id'          => null,
-            'title'       => 'IBC Website',
-            'url'         => 'https://www.business-consulting.de',
-            'description' => 'Offizielle IBC-Vereinswebsite',
-            'icon'        => 'fas fa-globe',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'EasyVerein',
-            'url'         => 'https://app.easyverein.com',
-            'description' => 'Mitgliederverwaltung und Vereinsbuchhaltung',
-            'icon'        => 'fas fa-users-cog',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'Microsoft 365',
-            'url'         => 'https://www.office.com',
-            'description' => 'Office-Apps, E-Mail und Kalender',
-            'icon'        => 'fab fa-microsoft',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'Microsoft Entra Admin',
-            'url'         => 'https://entra.microsoft.com',
-            'description' => 'Benutzerverwaltung und Identitäten',
-            'icon'        => 'fas fa-id-badge',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'SharePoint',
-            'url'         => 'https://sharepoint.com',
-            'description' => 'Dokumente und Zusammenarbeit',
-            'icon'        => 'fas fa-folder-open',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'Teams',
-            'url'         => 'https://teams.microsoft.com',
-            'description' => 'Chats, Meetings und Kanäle',
-            'icon'        => 'fas fa-comments',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'Azure Portal',
-            'url'         => 'https://portal.azure.com',
-            'description' => 'Cloud-Infrastruktur und Dienste',
-            'icon'        => 'fas fa-cloud',
-        ],
-        [
-            'id'          => null,
-            'title'       => 'GitHub',
-            'url'         => 'https://github.com',
-            'description' => 'Quellcode und Versionsverwaltung',
-            'icon'        => 'fab fa-github',
-        ],
-    ];
+    $_SESSION['error_message'] = 'Fehler beim Laden der Links aus der Datenbank: ' . htmlspecialchars($e->getMessage());
 }
 
 $title = 'Nützliche Links - IBC Intranet';
@@ -141,6 +78,15 @@ ob_start();
 </div>
 <?php unset($_SESSION['error_message']); endif; ?>
 
+<?php if (empty($links)): ?>
+<div class="card p-12 text-center">
+    <i class="fas fa-link text-gray-300 dark:text-gray-600 text-5xl mb-4" aria-hidden="true"></i>
+    <p class="text-gray-500 dark:text-gray-400 text-lg">Noch keine Links vorhanden.</p>
+    <?php if ($canManage): ?>
+    <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Klicken Sie auf „Neuen Link erstellen", um den ersten Link hinzuzufügen.</p>
+    <?php endif; ?>
+</div>
+<?php else: ?>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php foreach ($links as $link):
         $rawUrl  = $link['url'] ?? '';
@@ -191,6 +137,7 @@ ob_start();
     </div>
     <?php endforeach; ?>
 </div>
+<?php endif; ?>
 
 <script>
 document.querySelectorAll('.delete-form').forEach(function(form) {

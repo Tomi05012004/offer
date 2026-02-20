@@ -676,7 +676,7 @@ ob_start();
         <!-- Form Actions -->
         <?php if (!$readOnly): ?>
         <div class="flex space-x-4 pt-6 border-t">
-            <a href="manage.php" class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 ease-premium text-center">
+            <a href="manage.php" class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 ease-premium text-center no-underline">
                 Abbrechen
             </a>
             <button type="submit" class="flex-1 btn-primary inline-flex items-center justify-center">

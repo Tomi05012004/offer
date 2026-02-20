@@ -56,7 +56,7 @@ ob_start();
         <?php if (Auth::isBoard() || Auth::hasRole('head')): ?>
         <a 
             href="<?php echo asset('pages/polls/create.php'); ?>"
-            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg"
+            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg no-underline"
         >
             <i class="fas fa-plus mr-2"></i>
             Neue Umfrage erstellen
@@ -125,7 +125,7 @@ ob_start();
                     href="<?php echo htmlspecialchars($poll['microsoft_forms_url']); ?>"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+                    class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors no-underline"
                 >
                     <i class="fas fa-external-link-alt mr-2"></i>Zur Umfrage
                 </a>
@@ -140,7 +140,7 @@ ob_start();
             <!-- Internal Poll - Regular behavior -->
             <a 
                 href="<?php echo asset('pages/polls/view.php?id=' . $poll['id']); ?>"
-                class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+                class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors no-underline"
             >
                 <?php if ($poll['user_has_voted'] > 0): ?>
                     <i class="fas fa-chart-bar mr-2"></i>Ergebnisse ansehen

@@ -325,7 +325,7 @@ ob_start();
 
         <!-- Actions -->
         <div class="flex space-x-2">
-            <a href="manage.php?edit=<?php echo $project['id']; ?>" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-center text-sm">
+            <a href="manage.php?edit=<?php echo $project['id']; ?>" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-center text-sm no-underline">
                 <i class="fas fa-edit mr-1"></i>Bearbeiten
             </a>
             <button 
@@ -420,7 +420,7 @@ document.getElementById('deleteModal')?.addEventListener('click', (e) => {
             <i class="fas fa-briefcase text-purple-600 mr-2"></i>
             <?php echo $project ? 'Projekt bearbeiten' : 'Neues Projekt'; ?>
         </h1>
-        <a href="manage.php" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+        <a href="manage.php" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition no-underline">
             <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
         </a>
     </div>
@@ -645,7 +645,7 @@ document.getElementById('deleteModal')?.addEventListener('click', (e) => {
 
         <!-- Form Actions -->
         <div class="flex space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <a href="manage.php" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+            <a href="manage.php" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition no-underline">
                 Abbrechen
             </a>
             <?php if ($project): ?>

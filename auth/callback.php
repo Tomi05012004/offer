@@ -17,11 +17,25 @@ require_once __DIR__ . '/../includes/database.php';
 // Start session
 AuthHandler::startSession();
 
+// Capture diagnostic information before the try-block so it is available in the catch
+$stateGet     = $_GET['state'] ?? null;
+$stateSession = $_SESSION['oauth2state'] ?? null;
+$stateMatch   = ($stateGet !== null && $stateSession !== null && $stateGet === $stateSession);
+$tokenError   = null;
+$azureOid     = null;
+$userEmail    = null;
+
 // Handle the Microsoft callback
 try {
     // Validate state for CSRF protection
     if (!isset($_GET['state']) || !isset($_SESSION['oauth2state']) || $_GET['state'] !== $_SESSION['oauth2state']) {
-        error_log("[OAuth] State validation failed in callback.php");
+        $stateMsg = sprintf(
+            "[OAuth] State validation failed. GET state: %s | SESSION state: %s | Match: %s",
+            $stateGet    ?? 'not set',
+            $stateSession ?? 'not set',
+            $stateMatch ? 'yes' : 'no'
+        );
+        error_log($stateMsg);
         unset($_SESSION['oauth2state']);
         throw new Exception('Invalid state parameter');
     }
@@ -57,16 +71,24 @@ try {
     ]);
 
     // Exchange authorization code for access token
-    $accessToken = $provider->getAccessToken('authorization_code', [
-        'code' => $_GET['code'],
-    ]);
+    try {
+        $accessToken = $provider->getAccessToken('authorization_code', [
+            'code' => $_GET['code'],
+        ]);
+    } catch (Exception $tokenEx) {
+        $tokenError = $tokenEx->getMessage();
+        error_log("[OAuth] getAccessToken() failed: " . $tokenError);
+        throw $tokenEx;
+    }
 
     // Get resource owner (user) details and claims
     $resourceOwner = $provider->getResourceOwner($accessToken);
     $claims = $resourceOwner->toArray();
 
     // Extract azure_oid from the oid or sub claim
-    $azureOid = $claims['oid'] ?? $claims['sub'] ?? null;
+    $azureOid  = $claims['oid'] ?? $claims['sub'] ?? null;
+    $userEmail = $claims['mail'] ?? $claims['userPrincipalName'] ?? $claims['email'] ?? null;
+    error_log(sprintf("[OAuth] Claims received. azure_oid: %s | email: %s", $azureOid ?? 'null', $userEmail ?? 'null'));
 
     // Look up user in local database by azure_oid
     $db = Database::getUserDB();
@@ -81,11 +103,20 @@ try {
     AuthHandler::completeMicrosoftLogin($claims, $existingUser);
 
 } catch (Exception $e) {
-    // Log the full error details server-side
-    error_log("Microsoft callback error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-    
-    // Redirect to login page with a generic error message
+    // Log full diagnostic details server-side (visible in IONOS server logs)
+    error_log(sprintf(
+        "[OAuth Callback] Authentifizierung fehlgeschlagen: Fehler: %s | State (GET) gesetzt: %s | State (SESSION) gesetzt: %s | States identisch: %s | Token-Fehler: %s | azure_oid: %s | E-Mail: %s",
+        $e->getMessage(),
+        $stateGet     !== null ? 'ja' : 'nein',
+        $stateSession !== null ? 'ja' : 'nein',
+        $stateMatch ? 'ja' : 'nein',
+        $tokenError   ?? 'keiner',
+        $azureOid     ?? 'nicht verfügbar',
+        $userEmail    ?? 'nicht verfügbar'
+    ));
+    error_log("[OAuth Callback] Stack Trace: " . $e->getTraceAsString());
+
+    // Redirect to login page with a generic user-facing message (details are in server logs)
     $loginUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/auth/login.php' : '/pages/auth/login.php';
     $errorMessage = urlencode('Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
     header('Location: ' . $loginUrl . '?error=' . $errorMessage);

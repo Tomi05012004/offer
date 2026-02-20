@@ -388,29 +388,30 @@ class AuthHandler {
         self::startSession();
         
         // Load credentials from configuration constants
-        $clientId = defined('AZURE_CLIENT_ID') ? AZURE_CLIENT_ID : '';
-        $clientSecret = defined('AZURE_CLIENT_SECRET') ? AZURE_CLIENT_SECRET : '';
-        $redirectUri = defined('AZURE_REDIRECT_URI') ? AZURE_REDIRECT_URI : '';
-        $tenantId = defined('AZURE_TENANT_ID') ? AZURE_TENANT_ID : '';
+        $clientId = defined('CLIENT_ID') ? CLIENT_ID : '';
+        $clientSecret = defined('CLIENT_SECRET') ? CLIENT_SECRET : '';
+        $redirectUri = defined('REDIRECT_URI') ? REDIRECT_URI : '';
+        $tenantId = defined('TENANT_ID') ? TENANT_ID : '';
         
         // Validate required environment variables
         if (empty($clientId) || empty($clientSecret) || empty($redirectUri) || empty($tenantId)) {
             throw new Exception('Missing Azure OAuth configuration');
         }
         
-        // Initialize Azure OAuth provider
-        $provider = new \TheNetworg\OAuth2\Client\Provider\Azure([
-            'clientId'     => $clientId,
-            'clientSecret' => $clientSecret,
-            'redirectUri'  => $redirectUri,
-            'tenant'       => $tenantId
+        // Initialize GenericProvider with Azure endpoints using config constants
+        $provider = new \League\OAuth2\Client\Provider\GenericProvider([
+            'clientId'                => $clientId,
+            'clientSecret'            => $clientSecret,
+            'redirectUri'             => $redirectUri,
+            'urlAuthorize'            => 'https://login.microsoftonline.com/' . $tenantId . '/oauth2/v2.0/authorize',
+            'urlAccessToken'          => 'https://login.microsoftonline.com/' . $tenantId . '/oauth2/v2.0/token',
+            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',
         ]);
         
-        // Set scope (must be an array)
-        $provider->scope = ['openid', 'profile', 'email', 'offline_access', 'User.Read'];
-        
-        // Generate authorization URL
-        $authorizationUrl = $provider->getAuthorizationUrl();
+        // Generate authorization URL with required scopes
+        $authorizationUrl = $provider->getAuthorizationUrl([
+            'scope' => ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
+        ]);
         
         // Store state in session for CSRF protection
         $_SESSION['oauth2state'] = $provider->getState();
@@ -433,8 +434,6 @@ class AuthHandler {
      */
     public static function handleMicrosoftCallback() {
         require_once __DIR__ . '/../../vendor/autoload.php';
-        require_once __DIR__ . '/../services/MicrosoftGraphService.php';
-        require_once __DIR__ . '/../models/Alumni.php';
         
         self::startSession();
         
@@ -465,22 +464,24 @@ class AuthHandler {
         }
         
         // Load credentials from configuration constants
-        $clientId = defined('AZURE_CLIENT_ID') ? AZURE_CLIENT_ID : '';
-        $clientSecret = defined('AZURE_CLIENT_SECRET') ? AZURE_CLIENT_SECRET : '';
-        $redirectUri = defined('AZURE_REDIRECT_URI') ? AZURE_REDIRECT_URI : '';
-        $tenantId = defined('AZURE_TENANT_ID') ? AZURE_TENANT_ID : '';
+        $clientId = defined('CLIENT_ID') ? CLIENT_ID : '';
+        $clientSecret = defined('CLIENT_SECRET') ? CLIENT_SECRET : '';
+        $redirectUri = defined('REDIRECT_URI') ? REDIRECT_URI : '';
+        $tenantId = defined('TENANT_ID') ? TENANT_ID : '';
         
         // Validate required environment variables
         if (empty($clientId) || empty($clientSecret) || empty($redirectUri) || empty($tenantId)) {
             throw new Exception('Missing Azure OAuth configuration');
         }
         
-        // Initialize Azure OAuth provider
-        $provider = new \TheNetworg\OAuth2\Client\Provider\Azure([
-            'clientId'     => $clientId,
-            'clientSecret' => $clientSecret,
-            'redirectUri'  => $redirectUri,
-            'tenant'       => $tenantId
+        // Initialize GenericProvider with Azure endpoints using config constants
+        $provider = new \League\OAuth2\Client\Provider\GenericProvider([
+            'clientId'                => $clientId,
+            'clientSecret'            => $clientSecret,
+            'redirectUri'             => $redirectUri,
+            'urlAuthorize'            => 'https://login.microsoftonline.com/' . $tenantId . '/oauth2/v2.0/authorize',
+            'urlAccessToken'          => 'https://login.microsoftonline.com/' . $tenantId . '/oauth2/v2.0/token',
+            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',
         ]);
         
         try {
@@ -489,114 +490,203 @@ class AuthHandler {
                 'code' => $_GET['code']
             ]);
             
-            // Get resource owner (user) details from the ID token
+            // Get resource owner (user) details
             $resourceOwner = $provider->getResourceOwner($token);
             
             // Get user claims (including roles)
             $claims = $resourceOwner->toArray();
-            $azureRoles = $claims['roles'] ?? [];
-            error_log("DEBUG AZURE ROLES FROM TOKEN: " . print_r($azureRoles, true));
             
-            // Get Azure Object ID from claims for Microsoft Graph API calls
-            $azureOid = $claims['oid'] ?? null;
+            // Extract azure_oid from oid or sub claim
+            $azureOid = $claims['oid'] ?? $claims['sub'] ?? null;
             
-            // Fetch user's group memberships from Microsoft Graph API
-            $entraGroups = [];
+            // Look up user in local database by azure_oid
+            $db = Database::getUserDB();
+            $existingUser = null;
             if ($azureOid) {
-                try {
-                    // Initialize Microsoft Graph Service (uses service account access token)
-                    $graphService = new MicrosoftGraphService();
-                    
-                    // Get user profile (includes groups)
-                    $profileData = $graphService->getUserProfile($azureOid);
-                    $entraGroups = $profileData['groups'] ?? [];
-                    
-                    // Debug logging for role matching
-                    error_log('DEBUG ENTRA - Gefundene Gruppen (Raw): ' . print_r($entraGroups, true));
-                    
-                    // Log groups for debugging
-                    if (!empty($entraGroups)) {
-                        error_log("Microsoft Entra groups fetched for user {$azureOid}: " . json_encode($entraGroups));
-                    } else {
-                        error_log("No Microsoft Entra groups found for user {$azureOid}");
-                    }
-                } catch (Exception $e) {
-                    error_log("Failed to fetch user groups from Microsoft Graph during login: " . $e->getMessage());
-                    // Continue with empty groups - will use JWT roles or default
-                }
+                $stmt = $db->prepare("SELECT * FROM users WHERE azure_oid = ?");
+                $stmt->execute([$azureOid]);
+                $existingUser = $stmt->fetch() ?: null;
             }
             
-            // Define role mapping from Azure group IDs to internal role names
-            // This mapping works for both:
-            // 1. App Roles from JWT token (roles claim)
-            // 2. Group IDs from Microsoft Entra (Graph API)
-            // 
-            // Start with Microsoft Entra Group IDs from global ROLE_MAPPING constant
-            // Flip the mapping so Group IDs become keys and internal role names become values
-            $roleMapping = array_flip(ROLE_MAPPING);
+            // Complete the login (role mapping, user create/update, session setup)
+            self::completeMicrosoftLogin($claims, $existingUser);
             
-            // Add backward compatibility mappings for App Roles and display names
-            $roleMapping = array_merge($roleMapping, [
-                // Lowercase versions (for App Roles - backward compatibility)
-                'anwaerter' => 'candidate',
-                'mitglied' => 'member',
-                'ressortleiter' => 'head',
-                'vorstand_finanzen' => 'board_finance',
-                'vorstand_intern' => 'board_internal',
-                'vorstand_extern' => 'board_external',
-                'vorstand' => 'board_internal',
-                'alumni' => 'alumni',
-                'alumni_vorstand' => 'alumni_board',
-                'alumni_finanz' => 'alumni_auditor',
-                'ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with underscore (for Group display names - backward compatibility)
-                'Anwaerter' => 'candidate',
-                'Mitglied' => 'member',
-                'Ressortleiter' => 'head',
-                'Vorstand_Finanzen' => 'board_finance',
-                'Vorstand_Intern' => 'board_internal',
-                'Vorstand_Extern' => 'board_external',
-                'Vorstand' => 'board_internal',
-                'Alumni' => 'alumni',
-                'Alumni_Vorstand' => 'alumni_board',
-                'Alumni_Finanz' => 'alumni_auditor',
-                'Ehrenmitglied' => 'honorary_member',
-                // Capitalized versions with space (alternative Group display names - backward compatibility)
-                'Vorstand Finanzen' => 'board_finance',
-                'Vorstand Intern' => 'board_internal',
-                'Vorstand Extern' => 'board_external',
-                'Alumni Vorstand' => 'alumni_board',
-                'Alumni Finanz' => 'alumni_auditor'
-            ]);
-            
-            // Debug logging for expected role keys
-            error_log('DEBUG ENTRA - Erwartete Rollen-Keys: ' . print_r(array_keys($roleMapping), true));
-            
-            // Define role hierarchy for priority selection (higher value = higher priority)
-            $roleHierarchy = [
-                'candidate' => 1,
-                'member' => 2,
-                'head' => 3,
-                'alumni' => 4,
-                'honorary_member' => 5,
-                'board_finance' => 6,
-                'board_internal' => 7,
-                'board_external' => 8,
-                'alumni_board' => 9,
-                'alumni_auditor' => 10
-            ];
-            
-            // Find the role with the highest priority from all sources
-            $highestPriority = 0;
-            $selectedRole = 'member'; // Default to member if no valid role found
-            
-            // Process JWT roles (simple strings)
-            foreach ($azureRoles as $roleSource) {
-                // Check both exact match and lowercase match for compatibility
-                $roleLower = strtolower($roleSource);
+        } catch (Exception $e) {
+            self::logSystemAction(null, 'login_failed_microsoft', 'user', null, 'Microsoft login error: ' . $e->getMessage());
+            throw new Exception('Failed to authenticate with Microsoft: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Complete Microsoft login after access token and initial user lookup.
+     * Handles role mapping, user create/update, profile sync, and session setup.
+     *
+     * @param array      $claims       Token claims from the resource owner
+     * @param array|null $existingUser Pre-fetched user row (by azure_oid) or null
+     */
+    public static function completeMicrosoftLogin(array $claims, $existingUser = null) {
+        require_once __DIR__ . '/../../vendor/autoload.php';
+        require_once __DIR__ . '/../services/MicrosoftGraphService.php';
+        require_once __DIR__ . '/../models/Alumni.php';
+
+        $azureRoles = $claims['roles'] ?? [];
+        error_log("DEBUG AZURE ROLES FROM TOKEN: " . print_r($azureRoles, true));
+
+        // Get Azure Object ID from claims for Microsoft Graph API calls
+        $azureOid = $claims['oid'] ?? $claims['sub'] ?? null;
+
+        // Fetch user's group memberships from Microsoft Graph API
+        $entraGroups = [];
+        if ($azureOid) {
+            try {
+                // Initialize Microsoft Graph Service (uses service account access token)
+                $graphService = new MicrosoftGraphService();
                 
-                if (isset($roleMapping[$roleSource])) {
-                    $internalRole = $roleMapping[$roleSource];
+                // Get user profile (includes groups)
+                $profileData = $graphService->getUserProfile($azureOid);
+                $entraGroups = $profileData['groups'] ?? [];
+                
+                // Debug logging for role matching
+                error_log('DEBUG ENTRA - Gefundene Gruppen (Raw): ' . print_r($entraGroups, true));
+                
+                // Log groups for debugging
+                if (!empty($entraGroups)) {
+                    error_log("Microsoft Entra groups fetched for user {$azureOid}: " . json_encode($entraGroups));
+                } else {
+                    error_log("No Microsoft Entra groups found for user {$azureOid}");
+                }
+            } catch (Exception $e) {
+                error_log("Failed to fetch user groups from Microsoft Graph during login: " . $e->getMessage());
+                // Continue with empty groups - will use JWT roles or default
+            }
+        }
+        
+        // Define role mapping from Azure group IDs to internal role names
+        // This mapping works for both:
+        // 1. App Roles from JWT token (roles claim)
+        // 2. Group IDs from Microsoft Entra (Graph API)
+        // 
+        // Start with Microsoft Entra Group IDs from global ROLE_MAPPING constant
+        // Flip the mapping so Group IDs become keys and internal role names become values
+        $roleMapping = array_flip(ROLE_MAPPING);
+        
+        // Add backward compatibility mappings for App Roles and display names
+        $roleMapping = array_merge($roleMapping, [
+            // Lowercase versions (for App Roles - backward compatibility)
+            'anwaerter' => 'candidate',
+            'mitglied' => 'member',
+            'ressortleiter' => 'head',
+            'vorstand_finanzen' => 'board_finance',
+            'vorstand_intern' => 'board_internal',
+            'vorstand_extern' => 'board_external',
+            'vorstand' => 'board_internal',
+            'alumni' => 'alumni',
+            'alumni_vorstand' => 'alumni_board',
+            'alumni_finanz' => 'alumni_auditor',
+            'ehrenmitglied' => 'honorary_member',
+            // Capitalized versions with underscore (for Group display names - backward compatibility)
+            'Anwaerter' => 'candidate',
+            'Mitglied' => 'member',
+            'Ressortleiter' => 'head',
+            'Vorstand_Finanzen' => 'board_finance',
+            'Vorstand_Intern' => 'board_internal',
+            'Vorstand_Extern' => 'board_external',
+            'Vorstand' => 'board_internal',
+            'Alumni' => 'alumni',
+            'Alumni_Vorstand' => 'alumni_board',
+            'Alumni_Finanz' => 'alumni_auditor',
+            'Ehrenmitglied' => 'honorary_member',
+            // Capitalized versions with space (alternative Group display names - backward compatibility)
+            'Vorstand Finanzen' => 'board_finance',
+            'Vorstand Intern' => 'board_internal',
+            'Vorstand Extern' => 'board_external',
+            'Alumni Vorstand' => 'alumni_board',
+            'Alumni Finanz' => 'alumni_auditor'
+        ]);
+        
+        // Debug logging for expected role keys
+        error_log('DEBUG ENTRA - Erwartete Rollen-Keys: ' . print_r(array_keys($roleMapping), true));
+        
+        // Define role hierarchy for priority selection (higher value = higher priority)
+        $roleHierarchy = [
+            'candidate' => 1,
+            'member' => 2,
+            'head' => 3,
+            'alumni' => 4,
+            'honorary_member' => 5,
+            'board_finance' => 6,
+            'board_internal' => 7,
+            'board_external' => 8,
+            'alumni_board' => 9,
+            'alumni_auditor' => 10
+        ];
+        
+        // Find the role with the highest priority from all sources
+        $highestPriority = 0;
+        $selectedRole = 'member'; // Default to member if no valid role found
+        
+        // Process JWT roles (simple strings)
+        foreach ($azureRoles as $roleSource) {
+            // Check both exact match and lowercase match for compatibility
+            $roleLower = strtolower($roleSource);
+            
+            if (isset($roleMapping[$roleSource])) {
+                $internalRole = $roleMapping[$roleSource];
+                $priority = $roleHierarchy[$internalRole] ?? 0;
+                
+                if ($priority > $highestPriority) {
+                    $highestPriority = $priority;
+                    $selectedRole = $internalRole;
+                    error_log("Treffer! User erhält Rolle: " . $internalRole);
+                }
+            } elseif (isset($roleMapping[$roleLower])) {
+                $internalRole = $roleMapping[$roleLower];
+                $priority = $roleHierarchy[$internalRole] ?? 0;
+                
+                if ($priority > $highestPriority) {
+                    $highestPriority = $priority;
+                    $selectedRole = $internalRole;
+                    error_log("Treffer! User erhält Rolle: " . $internalRole);
+                }
+            }
+        }
+        
+        // Process Entra groups (objects with id and displayName)
+        foreach ($entraGroups as $group) {
+            // Handle both object and string formats for backwards compatibility
+            if (is_array($group)) {
+                $displayName = $group['displayName'] ?? null;
+                $groupId = $group['id'] ?? null;
+                
+                // Check displayName against roleMapping
+                if ($displayName && isset($roleMapping[$displayName])) {
+                    $internalRole = $roleMapping[$displayName];
+                    $priority = $roleHierarchy[$internalRole] ?? 0;
+                    
+                    if ($priority > $highestPriority) {
+                        $highestPriority = $priority;
+                        $selectedRole = $internalRole;
+                        error_log("Treffer! User erhält Rolle: " . $internalRole);
+                    }
+                }
+                
+                // Check group ID against roleMapping
+                if ($groupId && isset($roleMapping[$groupId])) {
+                    $internalRole = $roleMapping[$groupId];
+                    $priority = $roleHierarchy[$internalRole] ?? 0;
+                    
+                    if ($priority > $highestPriority) {
+                        $highestPriority = $priority;
+                        $selectedRole = $internalRole;
+                        error_log("Treffer! User erhält Rolle: " . $internalRole);
+                    }
+                }
+            } else {
+                // Fallback for string format (backwards compatibility)
+                $roleLower = strtolower($group);
+                
+                if (isset($roleMapping[$group])) {
+                    $internalRole = $roleMapping[$group];
                     $priority = $roleHierarchy[$internalRole] ?? 0;
                     
                     if ($priority > $highestPriority) {
@@ -615,304 +705,243 @@ class AuthHandler {
                     }
                 }
             }
-            
-            // Process Entra groups (objects with id and displayName)
-            foreach ($entraGroups as $group) {
-                // Handle both object and string formats for backwards compatibility
-                if (is_array($group)) {
-                    $displayName = $group['displayName'] ?? null;
-                    $groupId = $group['id'] ?? null;
-                    
-                    // Check displayName against roleMapping
-                    if ($displayName && isset($roleMapping[$displayName])) {
-                        $internalRole = $roleMapping[$displayName];
-                        $priority = $roleHierarchy[$internalRole] ?? 0;
-                        
-                        if ($priority > $highestPriority) {
-                            $highestPriority = $priority;
-                            $selectedRole = $internalRole;
-                            error_log("Treffer! User erhält Rolle: " . $internalRole);
-                        }
-                    }
-                    
-                    // Check group ID against roleMapping
-                    if ($groupId && isset($roleMapping[$groupId])) {
-                        $internalRole = $roleMapping[$groupId];
-                        $priority = $roleHierarchy[$internalRole] ?? 0;
-                        
-                        if ($priority > $highestPriority) {
-                            $highestPriority = $priority;
-                            $selectedRole = $internalRole;
-                            error_log("Treffer! User erhält Rolle: " . $internalRole);
-                        }
-                    }
-                } else {
-                    // Fallback for string format (backwards compatibility)
-                    $roleLower = strtolower($group);
-                    
-                    if (isset($roleMapping[$group])) {
-                        $internalRole = $roleMapping[$group];
-                        $priority = $roleHierarchy[$internalRole] ?? 0;
-                        
-                        if ($priority > $highestPriority) {
-                            $highestPriority = $priority;
-                            $selectedRole = $internalRole;
-                            error_log("Treffer! User erhält Rolle: " . $internalRole);
-                        }
-                    } elseif (isset($roleMapping[$roleLower])) {
-                        $internalRole = $roleMapping[$roleLower];
-                        $priority = $roleHierarchy[$internalRole] ?? 0;
-                        
-                        if ($priority > $highestPriority) {
-                            $highestPriority = $priority;
-                            $selectedRole = $internalRole;
-                            error_log("Treffer! User erhält Rolle: " . $internalRole);
-                        }
-                    }
-                }
-            }
-            
-            $roleName = $selectedRole;
-            
-            // Log the selected role for debugging
-            error_log("Selected role for user {$azureOid}: {$roleName} (priority: {$highestPriority})");
-            
-            // Get user email from claims
-            // Priority: email -> preferred_username -> upn
-            $email = $claims['email'] ?? $claims['preferred_username'] ?? $claims['upn'] ?? null;
-            
-            if (!$email) {
-                // Log available claims for debugging
-                error_log('Azure AD claims received: ' . json_encode(array_keys($claims)));
-                throw new Exception('Unable to retrieve user email from Azure AD claims. Expected one of: email, preferred_username, or upn');
-            }
-            
-            // Extract first name and last name from claims
-            // Standard OpenID Connect claims: given_name, family_name, name
-            $firstName = $claims['given_name'] ?? $claims['givenName'] ?? null;
-            $lastName = $claims['family_name'] ?? $claims['surname'] ?? null;
-            
-            // Format names from Entra ID (e.g., "tom.lehmann" -> "Tom Lehmann")
-            if ($firstName) {
-                $firstName = formatEntraName($firstName);
-            }
-            if ($lastName) {
-                $lastName = formatEntraName($lastName);
-            }
-            
-            // Check if user exists in database
-            $db = Database::getUserDB();
+        }
+        
+        $roleName = $selectedRole;
+        
+        // Log the selected role for debugging
+        error_log("Selected role for user {$azureOid}: {$roleName} (priority: {$highestPriority})");
+        
+        // Get user email from claims
+        // Priority: email -> preferred_username -> upn
+        $email = $claims['email'] ?? $claims['preferred_username'] ?? $claims['upn'] ?? null;
+        
+        if (!$email) {
+            // Log available claims for debugging
+            error_log('Azure AD claims received: ' . json_encode(array_keys($claims)));
+            throw new Exception('Unable to retrieve user email from Azure AD claims. Expected one of: email, preferred_username, or upn');
+        }
+        
+        // Extract first name and last name from claims
+        // Standard OpenID Connect claims: given_name, family_name, name
+        $firstName = $claims['given_name'] ?? $claims['givenName'] ?? null;
+        $lastName = $claims['family_name'] ?? $claims['surname'] ?? null;
+        
+        // Format names from Entra ID (e.g., "tom.lehmann" -> "Tom Lehmann")
+        if ($firstName) {
+            $firstName = formatEntraName($firstName);
+        }
+        if ($lastName) {
+            $lastName = formatEntraName($lastName);
+        }
+        
+        // Look up user in database: if not already found by azure_oid, fall back to email
+        $db = Database::getUserDB();
+        if (!$existingUser) {
             $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
-            $existingUser = $stmt->fetch();
-            
-            // Get Azure Object ID from claims for role synchronization
-            $azureOid = $claims['oid'] ?? null;
-            
-            if ($existingUser) {
-                // Update existing user - update role and Azure info but keep profile_complete as is
-                $userId = $existingUser['id'];
-                
-                // Update user table with role from Microsoft (but don't override profile_complete)
-                // Also store the original Azure roles as JSON for profile display and Azure OID
-                $azureRolesJson = json_encode($azureRoles);
-                $stmt = $db->prepare("UPDATE users SET role = ?, azure_roles = ?, azure_oid = ?, last_login = NOW() WHERE id = ?");
-                $stmt->execute([$roleName, $azureRolesJson, $azureOid, $userId]);
-            } else {
-                // Create new user without password (OAuth login only)
-                $azureRolesJson = json_encode($azureRoles);
-                
-                // Use a random password hash since user will login via OAuth
-                $randomPassword = password_hash(bin2hex(random_bytes(32)), HASH_ALGO);
-                $isAlumniValidated = ($roleName === 'alumni') ? 0 : 1;
-                // Set profile_complete=0 to force first-time profile completion
-                $profileComplete = 0;
-                // Enable email notifications by default
-                $notifyProjects = 1;
-                $notifyEvents = 1;
-                
-                $stmt = $db->prepare("
-                    INSERT INTO users (
-                        email, password, role, azure_roles, azure_oid, 
-                        is_alumni_validated, profile_complete, 
-                        notify_new_projects, notify_new_events
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([
-                    $email, $randomPassword, $roleName, $azureRolesJson, $azureOid,
-                    $isAlumniValidated, $profileComplete,
-                    $notifyProjects, $notifyEvents
-                ]);
-                $userId = $db->lastInsertId();
-            }
-            
-            // Update or create alumni profile if first_name and last_name are available
-            if ($firstName && $lastName) {
-                try {
-                    $contentDb = Database::getContentDB();
-                    
-                    // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert logic (prevents race conditions)
-                    $stmt = $contentDb->prepare("
-                        INSERT INTO alumni_profiles (user_id, first_name, last_name, email)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE 
-                            first_name = VALUES(first_name),
-                            last_name = VALUES(last_name),
-                            email = VALUES(email)
-                    ");
-                    $stmt->execute([$userId, $firstName, $lastName, $email]);
-                } catch (Exception $e) {
-                    error_log("Failed to update alumni profile: " . $e->getMessage());
-                    // Don't throw - allow login to proceed even if profile update fails
-                }
-            }
-            
-            // Sync profile data and photo from Microsoft Graph
-            try {
-                // Reuse or create MicrosoftGraphService instance
-                if (!isset($graphService) && $azureOid) {
-                    $graphService = new MicrosoftGraphService();
-                }
-                
-                if ($azureOid && isset($graphService)) {
-                    // Get or reuse user profile data (job title, company, groups)
-                    // If we already fetched this earlier for role determination, reuse it
-                    if (!isset($profileData)) {
-                        try {
-                            $profileData = $graphService->getUserProfile($azureOid);
-                        } catch (Exception $e) {
-                            error_log("Failed to fetch user profile from Microsoft Graph: " . $e->getMessage());
-                            $profileData = ['jobTitle' => null, 'companyName' => null, 'groups' => []];
-                        }
-                    }
-                    
-                    // Store job title and company in users table
-                    $jobTitle = $profileData['jobTitle'] ?? null;
-                    $companyName = $profileData['companyName'] ?? null;
-                    $groups = $profileData['groups'] ?? [];
-                    
-                    // Convert groups array to JSON string for entra_roles
-                    // Groups are displayName from Microsoft Graph, already human-readable
-                    try {
-                        $entraRolesJson = !empty($groups) ? json_encode($groups, JSON_THROW_ON_ERROR) : null;
-                    } catch (JsonException $e) {
-                        error_log("Failed to JSON encode groups during profile sync for user ID " . intval($userId) . ": " . $e->getMessage());
-                        $entraRolesJson = null; // Fallback to null if encoding fails
-                    }
-                    
-                    // Update user record with profile data
-                    $stmt = $db->prepare("UPDATE users SET job_title = ?, company = ?, entra_roles = ? WHERE id = ?");
-                    $stmt->execute([$jobTitle, $companyName, $entraRolesJson, $userId]);
-                    
-                    // Store Entra roles in session for display
-                    $_SESSION['entra_roles'] = $groups;
-                    
-                    // Get user photo from Microsoft Graph
-                    $photoData = $graphService->getUserPhoto($azureOid);
-                    
-                    if ($photoData) {
-                        // Ensure profile_photos directory exists using realpath for security
-                        $baseDir = realpath(__DIR__ . '/../../uploads');
-                        if ($baseDir === false) {
-                            $attemptedPath = __DIR__ . '/../../uploads';
-                            throw new Exception("Base uploads directory does not exist at: {$attemptedPath}");
-                        }
-                        
-                        $uploadDir = $baseDir . '/profile_photos';
-                        if (!is_dir($uploadDir)) {
-                            mkdir($uploadDir, 0755, true);
-                        }
-                        
-                        // Save photo as user_{id}.jpg
-                        $filename = "user_{$userId}.jpg";
-                        $filepath = $uploadDir . '/' . $filename;
-                        
-                        $bytesWritten = file_put_contents($filepath, $photoData);
-                        if ($bytesWritten !== false) {
-                            // Update alumni profile with image path using upsert logic
-                            $imagePath = '/uploads/profile_photos/' . $filename;
-                            
-                            try {
-                                $contentDb = Database::getContentDB();
-                                
-                                // Update image_path in profile, creating profile if we have name data
-                                if ($firstName && $lastName) {
-                                    // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert (prevents race conditions)
-                                    // This handles both profile creation and update in one statement
-                                    $stmt = $contentDb->prepare("
-                                        INSERT INTO alumni_profiles (user_id, first_name, last_name, email, image_path)
-                                        VALUES (?, ?, ?, ?, ?)
-                                        ON DUPLICATE KEY UPDATE 
-                                            image_path = VALUES(image_path)
-                                    ");
-                                    $stmt->execute([$userId, $firstName, $lastName, $email, $imagePath]);
-                                } else {
-                                    // Only update image_path if profile already exists (no name data to create profile)
-                                    $stmt = $contentDb->prepare("UPDATE alumni_profiles SET image_path = ? WHERE user_id = ?");
-                                    $stmt->execute([$imagePath, $userId]);
-                                }
-                            } catch (Exception $e) {
-                                error_log("Failed to update profile image path: " . $e->getMessage());
-                            }
-                        } else {
-                            error_log("Failed to save profile photo for user {$userId}: file_put_contents returned false");
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-                error_log("Failed to sync profile photo from Microsoft Graph: " . $e->getMessage());
-                // Don't throw - allow login to proceed even if photo sync fails
-            }
-            
-            // Set session variables
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['user_email'] = $email;
-            $_SESSION['user_role'] = $roleName;
-            $_SESSION['authenticated'] = true;
-            $_SESSION['last_activity'] = time();
-            
-            // Check if profile is complete and 2FA status
-            $stmt = $db->prepare("SELECT profile_complete, two_factor_enabled FROM users WHERE id = ?");
-            $stmt->execute([$userId]);
-            $userCheck = $stmt->fetch();
-            if ($userCheck && intval($userCheck['profile_complete']) === 0) {
-                $_SESSION['profile_incomplete'] = true;
-            } else {
-                $_SESSION['profile_incomplete'] = false;
-            }
-            
-            // Check if 2FA is enabled
-            if ($userCheck && intval($userCheck['two_factor_enabled']) === 1) {
-                // Store pending authentication state
-                $_SESSION['pending_2fa_user_id'] = $userId;
-                $_SESSION['pending_2fa_email'] = $email;
-                $_SESSION['pending_2fa_role'] = $roleName;
-                // Clear authenticated flag until 2FA is verified
-                unset($_SESSION['authenticated']);
-                unset($_SESSION['user_id']);
-                unset($_SESSION['user_email']);
-                unset($_SESSION['user_role']);
-                
-                // Log 2FA required
-                self::logSystemAction($userId, 'login_2fa_required', 'user', $userId, 'Microsoft login successful, 2FA verification required');
-                
-                // Redirect to 2FA verification page
-                $verify2faUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/auth/verify_2fa.php' : '/pages/auth/verify_2fa.php';
-                header('Location: ' . $verify2faUrl);
-                exit;
-            }
-            
-            // Log successful login
-            self::logSystemAction($userId, 'login_success_microsoft', 'user', $userId, 'Successful Microsoft Entra ID login');
-            
-            // Redirect to dashboard
-            $dashboardUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/dashboard/index.php' : '/pages/dashboard/index.php';
-            header('Location: ' . $dashboardUrl);
-            exit;
-            
-        } catch (Exception $e) {
-            self::logSystemAction(null, 'login_failed_microsoft', 'user', null, 'Microsoft login error: ' . $e->getMessage());
-            throw new Exception('Failed to authenticate with Microsoft: ' . $e->getMessage());
+            $existingUser = $stmt->fetch() ?: null;
         }
+
+        if ($existingUser) {
+            // Update existing user - update role and Azure info but keep profile_complete as is
+            $userId = $existingUser['id'];
+            
+            // Update user table with role from Microsoft (but don't override profile_complete)
+            // Also store the original Azure roles as JSON for profile display and Azure OID
+            $azureRolesJson = json_encode($azureRoles);
+            $stmt = $db->prepare("UPDATE users SET role = ?, azure_roles = ?, azure_oid = ?, last_login = NOW() WHERE id = ?");
+            $stmt->execute([$roleName, $azureRolesJson, $azureOid, $userId]);
+        } else {
+            // Create new user without password (OAuth login only)
+            $azureRolesJson = json_encode($azureRoles);
+            
+            // Use a random password hash since user will login via OAuth
+            $randomPassword = password_hash(bin2hex(random_bytes(32)), HASH_ALGO);
+            $isAlumniValidated = ($roleName === 'alumni') ? 0 : 1;
+            // Set profile_complete=0 to force first-time profile completion
+            $profileComplete = 0;
+            // Enable email notifications by default
+            $notifyProjects = 1;
+            $notifyEvents = 1;
+            
+            $stmt = $db->prepare("
+                INSERT INTO users (
+                    email, password, role, azure_roles, azure_oid, 
+                    is_alumni_validated, profile_complete, 
+                    notify_new_projects, notify_new_events
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $email, $randomPassword, $roleName, $azureRolesJson, $azureOid,
+                $isAlumniValidated, $profileComplete,
+                $notifyProjects, $notifyEvents
+            ]);
+            $userId = $db->lastInsertId();
+        }
+        
+        // Update or create alumni profile if first_name and last_name are available
+        if ($firstName && $lastName) {
+            try {
+                $contentDb = Database::getContentDB();
+                
+                // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert logic (prevents race conditions)
+                $stmt = $contentDb->prepare("
+                    INSERT INTO alumni_profiles (user_id, first_name, last_name, email)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE 
+                        first_name = VALUES(first_name),
+                        last_name = VALUES(last_name),
+                        email = VALUES(email)
+                ");
+                $stmt->execute([$userId, $firstName, $lastName, $email]);
+            } catch (Exception $e) {
+                error_log("Failed to update alumni profile: " . $e->getMessage());
+                // Don't throw - allow login to proceed even if profile update fails
+            }
+        }
+        
+        // Sync profile data and photo from Microsoft Graph
+        try {
+            // Reuse or create MicrosoftGraphService instance
+            if (!isset($graphService) && $azureOid) {
+                $graphService = new MicrosoftGraphService();
+            }
+            
+            if ($azureOid && isset($graphService)) {
+                // Get or reuse user profile data (job title, company, groups)
+                // If we already fetched this earlier for role determination, reuse it
+                if (!isset($profileData)) {
+                    try {
+                        $profileData = $graphService->getUserProfile($azureOid);
+                    } catch (Exception $e) {
+                        error_log("Failed to fetch user profile from Microsoft Graph: " . $e->getMessage());
+                        $profileData = ['jobTitle' => null, 'companyName' => null, 'groups' => []];
+                    }
+                }
+                
+                // Store job title and company in users table
+                $jobTitle = $profileData['jobTitle'] ?? null;
+                $companyName = $profileData['companyName'] ?? null;
+                $groups = $profileData['groups'] ?? [];
+                
+                // Convert groups array to JSON string for entra_roles
+                // Groups are displayName from Microsoft Graph, already human-readable
+                try {
+                    $entraRolesJson = !empty($groups) ? json_encode($groups, JSON_THROW_ON_ERROR) : null;
+                } catch (JsonException $e) {
+                    error_log("Failed to JSON encode groups during profile sync for user ID " . intval($userId) . ": " . $e->getMessage());
+                    $entraRolesJson = null; // Fallback to null if encoding fails
+                }
+                
+                // Update user record with profile data
+                $stmt = $db->prepare("UPDATE users SET job_title = ?, company = ?, entra_roles = ? WHERE id = ?");
+                $stmt->execute([$jobTitle, $companyName, $entraRolesJson, $userId]);
+                
+                // Store Entra roles in session for display
+                $_SESSION['entra_roles'] = $groups;
+                
+                // Get user photo from Microsoft Graph
+                $photoData = $graphService->getUserPhoto($azureOid);
+                
+                if ($photoData) {
+                    // Ensure profile_photos directory exists using realpath for security
+                    $baseDir = realpath(__DIR__ . '/../../uploads');
+                    if ($baseDir === false) {
+                        $attemptedPath = __DIR__ . '/../../uploads';
+                        throw new Exception("Base uploads directory does not exist at: {$attemptedPath}");
+                    }
+                    
+                    $uploadDir = $baseDir . '/profile_photos';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    
+                    // Save photo as user_{id}.jpg
+                    $filename = "user_{$userId}.jpg";
+                    $filepath = $uploadDir . '/' . $filename;
+                    
+                    $bytesWritten = file_put_contents($filepath, $photoData);
+                    if ($bytesWritten !== false) {
+                        // Update alumni profile with image path using upsert logic
+                        $imagePath = '/uploads/profile_photos/' . $filename;
+                        
+                        try {
+                            $contentDb = Database::getContentDB();
+                            
+                            // Update image_path in profile, creating profile if we have name data
+                            if ($firstName && $lastName) {
+                                // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert (prevents race conditions)
+                                // This handles both profile creation and update in one statement
+                                $stmt = $contentDb->prepare("
+                                    INSERT INTO alumni_profiles (user_id, first_name, last_name, email, image_path)
+                                    VALUES (?, ?, ?, ?, ?)
+                                    ON DUPLICATE KEY UPDATE 
+                                        image_path = VALUES(image_path)
+                                ");
+                                $stmt->execute([$userId, $firstName, $lastName, $email, $imagePath]);
+                            } else {
+                                // Only update image_path if profile already exists (no name data to create profile)
+                                $stmt = $contentDb->prepare("UPDATE alumni_profiles SET image_path = ? WHERE user_id = ?");
+                                $stmt->execute([$imagePath, $userId]);
+                            }
+                        } catch (Exception $e) {
+                            error_log("Failed to update profile image path: " . $e->getMessage());
+                        }
+                    } else {
+                        error_log("Failed to save profile photo for user {$userId}: file_put_contents returned false");
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Failed to sync profile photo from Microsoft Graph: " . $e->getMessage());
+            // Don't throw - allow login to proceed even if photo sync fails
+        }
+        
+        // Set session variables
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_email'] = $email;
+        $_SESSION['user_role'] = $roleName;
+        $_SESSION['authenticated'] = true;
+        $_SESSION['last_activity'] = time();
+        
+        // Check if profile is complete and 2FA status
+        $stmt = $db->prepare("SELECT profile_complete, two_factor_enabled FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $userCheck = $stmt->fetch();
+        if ($userCheck && intval($userCheck['profile_complete']) === 0) {
+            $_SESSION['profile_incomplete'] = true;
+        } else {
+            $_SESSION['profile_incomplete'] = false;
+        }
+        
+        // Check if 2FA is enabled
+        if ($userCheck && intval($userCheck['two_factor_enabled']) === 1) {
+            // Store pending authentication state
+            $_SESSION['pending_2fa_user_id'] = $userId;
+            $_SESSION['pending_2fa_email'] = $email;
+            $_SESSION['pending_2fa_role'] = $roleName;
+            // Clear authenticated flag until 2FA is verified
+            unset($_SESSION['authenticated']);
+            unset($_SESSION['user_id']);
+            unset($_SESSION['user_email']);
+            unset($_SESSION['user_role']);
+            
+            // Log 2FA required
+            self::logSystemAction($userId, 'login_2fa_required', 'user', $userId, 'Microsoft login successful, 2FA verification required');
+            
+            // Redirect to 2FA verification page
+            $verify2faUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/auth/verify_2fa.php' : '/pages/auth/verify_2fa.php';
+            header('Location: ' . $verify2faUrl);
+            exit;
+        }
+        
+        // Log successful login
+        self::logSystemAction($userId, 'login_success_microsoft', 'user', $userId, 'Successful Microsoft Entra ID login');
+        
+        // Redirect to dashboard
+        $dashboardUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/dashboard/index.php' : '/pages/dashboard/index.php';
+        header('Location: ' . $dashboardUrl);
+        exit;
     }
 }

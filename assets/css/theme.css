@@ -1381,11 +1381,14 @@ body.dark-mode textarea {
 /* Dark Mode Links (außer Buttons und Sidebar) */
 body.dark-mode a:not(.btn):not(.btn-primary):not(.nav-link) {
     color: #ffffff !important; /* White instead of blue for links */
+    text-decoration: none !important;
 }
 
-/* Sidebar links override - keep white */
+/* Sidebar links override - keep white, flex-aligned, no underline */
 body.dark-mode .sidebar a {
     color: #ffffff !important;
+    display: flex !important;
+    text-decoration: none !important;
 }
 
 /* Dark Mode: Button and Interactive Element Support */

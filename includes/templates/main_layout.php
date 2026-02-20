@@ -795,8 +795,18 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 }
             }
             
-            // Generate greeting
-            $greeting = 'Guten Tag';
+            // Generate time-based greeting
+            $greetingTimezone = new DateTimeZone('Europe/Berlin');
+            $greetingNow = new DateTime('now', $greetingTimezone);
+            $greetingHour = (int)$greetingNow->format('H');
+            if ($greetingHour >= 5 && $greetingHour < 12) {
+                $greeting = 'Guten Morgen';
+            } elseif ($greetingHour >= 12 && $greetingHour < 18) {
+                $greeting = 'Guten Tag';
+            } else {
+                $greeting = 'Guten Abend';
+            }
+
             if (!empty($firstname) && !empty($lastname)) {
                 $greetingName = $firstname . ' ' . $lastname;
             } elseif (!empty($firstname)) {
@@ -804,7 +814,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             } elseif (!empty($lastname)) {
                 $greetingName = $lastname;
             } else {
-                $greetingName = $email;
+                // Derive name from email username using getFormattedName()
+                $emailUsername = strpos($email, '@') !== false ? explode('@', $email)[0] : $email;
+                $greetingName = Auth::getFormattedName($emailUsername);
             }
             
             // Generate initials with proper fallbacks
@@ -820,6 +832,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 $initials = 'U';
             }
             ?>
+            <!-- Greeting -->
+            <p class='text-xs text-white/70 mb-3 px-1'><?php echo htmlspecialchars($greeting . ', ' . $greetingName . '!'); ?></p>
+
             <!-- User Info -->
             <div class='flex items-center gap-3 mb-5'>
                 <div class='w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-white/20 shrink-0'>

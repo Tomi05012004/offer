@@ -3893,14 +3893,15 @@ body.dark-mode {
 }
 
 /* --- MOBILE RESPONSIVENESS --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .sidebar {
         position: fixed;
         top: 0;
         left: 0;
         height: 100vh;
-        width: 250px;
-        z-index: 50;
+        width: 85%;
+        max-width: 320px;
+        z-index: 1050;
         transform: translateX(-100%); /* Standardmäßig versteckt */
         transition: transform 0.3s ease-in-out;
     }
@@ -3920,9 +3921,91 @@ body.dark-mode {
         width: 100%;
         height: 100%;
         background: rgba(0,0,0,0.5);
-        z-index: 40;
+        z-index: 1040;
     }
     .sidebar-overlay.active {
         display: block;
     }
 }
+
+/* Mobile top navbar */
+.mobile-topbar {
+    background: var(--ibc-blue);
+    min-height: 60px;
+    z-index: 1060;
+}
+
+/* ===== BOOTSTRAP 5 COMPATIBILITY OVERRIDES ===== */
+/* Prevent Bootstrap from overriding IBC custom styles */
+
+/* Ensure body background from Bootstrap doesn't override ours */
+body {
+    background-color: var(--bg-body) !important;
+    font-family: var(--ibc-font-family) !important;
+}
+
+/* Prevent Bootstrap table styling from overriding theme */
+.table {
+    color: var(--text-main);
+}
+
+/* Ensure Bootstrap containers don't create unexpected padding */
+.container, .container-fluid, .container-sm, .container-md, .container-lg, .container-xl {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Bootstrap row negative margins fix */
+.row {
+    --bs-gutter-x: 1.5rem;
+}
+
+/* Prevent Bootstrap link decoration from overriding sidebar links */
+.sidebar a {
+    text-decoration: none !important;
+}
+
+/* Bootstrap form-control should not override our styled inputs */
+.form-control, .form-select {
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .form-control,
+.dark-mode .form-select {
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-light) !important;
+}
+
+/* Ensure Bootstrap modal z-index doesn't conflict with sidebar */
+.modal {
+    z-index: 1055 !important;
+}
+.modal-backdrop {
+    z-index: 1054 !important;
+}
+
+/* Bootstrap accordion compatibility */
+.accordion-button {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+}
+
+.dark-mode .accordion-button {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: var(--ibc-blue) !important;
+    color: #ffffff !important;
+}
+
+/* Bootstrap badge compatibility */
+.badge {
+    font-weight: 600 !important;
+}
+
+/* ===== END BOOTSTRAP 5 COMPATIBILITY OVERRIDES ===== */ 

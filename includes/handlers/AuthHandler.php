@@ -408,9 +408,9 @@ class AuthHandler {
             'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',
         ]);
         
-        // Generate authorization URL with required scopes
+        // Generate authorization URL with required scopes (space-separated as required by Microsoft OAuth v2.0)
         $authorizationUrl = $provider->getAuthorizationUrl([
-            'scope' => ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
+            'scope' => 'openid profile email offline_access User.Read',
         ]);
         
         // Store state in session for CSRF protection

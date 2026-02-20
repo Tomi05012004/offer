@@ -1992,6 +1992,11 @@ a.btn-secondary {
     transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease !important;
 }
 
+/* Sidebar section labels: left-aligned */
+.sidebar p {
+    text-align: left !important;
+}
+
 /* Sidebar profile section: left-aligned in both light and dark mode */
 .sidebar .mt-auto {
     text-align: left !important;

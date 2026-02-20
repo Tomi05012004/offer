@@ -906,7 +906,7 @@ class AuthHandler {
         $_SESSION['last_activity'] = time();
         
         // Check if profile is complete and 2FA status
-        $stmt = $db->prepare("SELECT profile_complete, two_factor_enabled FROM users WHERE id = ?");
+        $stmt = $db->prepare("SELECT profile_complete, tfa_enabled FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $userCheck = $stmt->fetch();
         if ($userCheck && intval($userCheck['profile_complete']) === 0) {
@@ -916,7 +916,7 @@ class AuthHandler {
         }
         
         // Check if 2FA is enabled
-        if ($userCheck && intval($userCheck['two_factor_enabled']) === 1) {
+        if ($userCheck && intval($userCheck['tfa_enabled']) === 1) {
             // Store pending authentication state
             $_SESSION['pending_2fa_user_id'] = $userId;
             $_SESSION['pending_2fa_email'] = $email;

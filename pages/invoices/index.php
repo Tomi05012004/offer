@@ -40,11 +40,14 @@ if ($canViewStats) {
 $userDb = Database::getUserDB();
 
 // Compute summary stats from the fetched invoices (visible to all users)
-$summaryPendingCount = 0;
-$summaryTotalAmount = 0.0;
+$summaryOpenAmount = 0.0;
+$summaryInReviewCount = 0;
+$summaryPaidAmount = 0.0;
+$summaryPaidCount = 0;
 foreach ($invoices as $inv) {
-    if ($inv['status'] === 'pending') $summaryPendingCount++;
-    $summaryTotalAmount += (float)$inv['amount'];
+    if (in_array($inv['status'], ['pending', 'approved'])) $summaryOpenAmount += (float)$inv['amount'];
+    if ($inv['status'] === 'pending') $summaryInReviewCount++;
+    if ($inv['status'] === 'paid') { $summaryPaidAmount += (float)$inv['amount']; $summaryPaidCount++; }
 }
 
 $title = 'Rechnungsmanagement - IBC Intranet';
@@ -92,14 +95,28 @@ ob_start();
     </div>
 
     <!-- Dashboard Summary Cards (visible to all users with invoices) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 <?php echo $stats ? 'lg:grid-cols-4' : ''; ?> gap-4 mb-8">
-        <!-- Offene Erstattungen -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 <?php echo $stats ? 'lg:grid-cols-5' : ''; ?> gap-4 mb-8">
+        <!-- Gesamtbetrag Offen -->
+        <div class="card p-5 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-l-4 border-red-500 dark:border-red-600 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Gesamtbetrag Offen</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo number_format($summaryOpenAmount, 2, ',', '.'); ?> €</p>
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1"><i class="fas fa-folder-open mr-1"></i>Ausstehend</p>
+                </div>
+                <div class="w-12 h-12 bg-red-500 dark:bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <i class="fas fa-folder-open text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Prüfung -->
         <div class="card p-5 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-l-4 border-yellow-500 dark:border-yellow-600 hover:shadow-lg transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Offene Erstattungen</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $summaryPendingCount; ?></p>
-                    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1"><i class="fas fa-clock mr-1"></i>Ausstehend</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">In Prüfung</p>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $summaryInReviewCount; ?></p>
+                    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1"><i class="fas fa-clock mr-1"></i>Warten auf Genehmigung</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                     <i class="fas fa-clock text-white text-xl"></i>
@@ -107,16 +124,16 @@ ob_start();
             </div>
         </div>
 
-        <!-- Gesamtbetrag -->
-        <div class="card p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-l-4 border-blue-500 dark:border-blue-600 hover:shadow-lg transition-shadow duration-200">
+        <!-- Bezahlt -->
+        <div class="card p-5 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500 dark:border-green-600 hover:shadow-lg transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Gesamtbetrag</p>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo number_format($summaryTotalAmount, 2, ',', '.'); ?> €</p>
-                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1"><i class="fas fa-coins mr-1"></i>Alle Einreichungen</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Bezahlt</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo number_format($summaryPaidAmount, 2, ',', '.'); ?> €</p>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1"><i class="fas fa-check-circle mr-1"></i><?php echo $summaryPaidCount; ?> Rechnung<?php echo $summaryPaidCount !== 1 ? 'en' : ''; ?></p>
                 </div>
-                <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                    <i class="fas fa-coins text-white text-xl"></i>
+                <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
                 </div>
             </div>
         </div>
@@ -194,7 +211,7 @@ ob_start();
                     }
                 }
 
-                // Status configuration (icons + colors + labels)
+                // Status configuration (dots + colors + labels)
                 $statusColors = [
                     'pending'  => 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
                     'approved' => 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700',
@@ -202,13 +219,13 @@ ob_start();
                     'paid'     => 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
                 ];
                 $statusIcons = [
-                    'pending'  => '<i class="fas fa-clock mr-1"></i>',
-                    'approved' => '<i class="fas fa-check-circle mr-1"></i>',
-                    'rejected' => '<i class="fas fa-times-circle mr-1"></i>',
-                    'paid'     => '<i class="fas fa-check-double mr-1"></i>',
+                    'pending'  => '<span class="w-2 h-2 rounded-full bg-yellow-500 inline-block mr-1.5 flex-shrink-0"></span>',
+                    'approved' => '<span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-1.5 flex-shrink-0"></span>',
+                    'rejected' => '<span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1.5 flex-shrink-0"></span>',
+                    'paid'     => '<span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 flex-shrink-0"></span>',
                 ];
                 $statusLabels = [
-                    'pending'  => 'In Bearbeitung',
+                    'pending'  => 'In Prüfung',
                     'approved' => 'Genehmigt',
                     'rejected' => 'Abgelehnt',
                     'paid'     => 'Bezahlt',
@@ -269,7 +286,20 @@ ob_start();
                                     <?php echo number_format($invoice['amount'], 2, ',', '.'); ?> €
                                 </span>
                                 <?php if (!empty($invoice['file_path'])): ?>
-                                    <span class="text-xs text-blue-600 dark:text-blue-400"><i class="fas fa-paperclip mr-1"></i>Beleg</span>
+                                    <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+                                        <a href="<?php echo asset($invoice['file_path']); ?>"
+                                           target="_blank"
+                                           title="Ansehen"
+                                           class="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors no-underline">
+                                            <i class="fas fa-eye mr-1"></i>Ansehen
+                                        </a>
+                                        <a href="<?php echo asset($invoice['file_path']); ?>"
+                                           download
+                                           title="Herunterladen"
+                                           class="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                             <?php if (Auth::isBoard() && $invoice['status'] === 'pending'): ?>
@@ -296,7 +326,7 @@ ob_start();
                 </div>
 
                 <!-- Desktop Table View (hidden on small screens) -->
-                <table class="hidden md:table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <table class="hidden md:table min-w-full">
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Datum</th>
@@ -311,7 +341,7 @@ ob_start();
                             <?php endif; ?>
                         </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody class="bg-white dark:bg-gray-900">
                         <?php foreach ($invoices as $invoice): ?>
                             <?php
                             $submitterEmail = $userInfoMap[$invoice['user_id']] ?? 'Unknown';
@@ -364,11 +394,20 @@ ob_start();
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm" onclick="event.stopPropagation()">
                                     <?php if (!empty($invoice['file_path'])): ?>
-                                        <a href="<?php echo asset($invoice['file_path']); ?>"
-                                           target="_blank"
-                                           class="inline-flex items-center px-3 py-1.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all shadow-sm hover:shadow no-underline">
-                                            <i class="fas fa-file-pdf mr-1"></i>Ansehen
-                                        </a>
+                                        <div class="flex items-center gap-2">
+                                            <a href="<?php echo asset($invoice['file_path']); ?>"
+                                               target="_blank"
+                                               title="Ansehen"
+                                               class="inline-flex items-center px-2.5 py-1.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all shadow-sm hover:shadow no-underline">
+                                                <i class="fas fa-eye mr-1"></i>Ansehen
+                                            </a>
+                                            <a href="<?php echo asset($invoice['file_path']); ?>"
+                                               download
+                                               title="Herunterladen"
+                                               class="inline-flex items-center px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all shadow-sm hover:shadow no-underline">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
                                     <?php else: ?>
                                         <span class="text-gray-400 dark:text-gray-500">Kein Beleg</span>
                                     <?php endif; ?>
@@ -652,10 +691,10 @@ function openInvoiceDetail(data) {
         paid:     'bg-green-100 text-green-800 border-green-300',
     };
     const statusIcons = {
-        pending:  '<i class="fas fa-clock mr-1"></i>',
-        approved: '<i class="fas fa-check-circle mr-1"></i>',
-        rejected: '<i class="fas fa-times-circle mr-1"></i>',
-        paid:     '<i class="fas fa-check-double mr-1"></i>',
+        pending:  '<span class="w-2 h-2 rounded-full bg-yellow-500 inline-block mr-1.5 flex-shrink-0"></span>',
+        approved: '<span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-1.5 flex-shrink-0"></span>',
+        rejected: '<span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1.5 flex-shrink-0"></span>',
+        paid:     '<span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 flex-shrink-0"></span>',
     };
     badge.className = 'inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full border ' +
         (statusClasses[data.status] || 'bg-gray-100 text-gray-800 border-gray-300');

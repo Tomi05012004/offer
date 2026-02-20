@@ -514,4 +514,21 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='System-wide audit log for tracking all user and system actions';
 
+-- ================================================
+-- TABLE: links
+-- ================================================
+CREATE TABLE IF NOT EXISTS `links` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `url` VARCHAR(500) NOT NULL,
+  `description` VARCHAR(500) DEFAULT NULL,
+  `icon` VARCHAR(100) DEFAULT 'fas fa-link',
+  `sort_order` INT UNSIGNED DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_by` INT UNSIGNED DEFAULT NULL COMMENT 'User ID who created the link',
+  INDEX `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Useful links for quick access to frequently used tools and resources';
+
 COMMIT;

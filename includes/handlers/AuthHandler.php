@@ -361,7 +361,7 @@ class AuthHandler {
     /**
      * Log system action
      */
-    private static function logSystemAction($userId, $action, $entityType = null, $entityId = null, $details = null) {
+    public static function logSystemAction($userId, $action, $entityType = null, $entityId = null, $details = null) {
         try {
             $db = Database::getContentDB();
             $stmt = $db->prepare("INSERT INTO system_logs (user_id, action, entity_type, entity_id, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -936,6 +936,12 @@ class AuthHandler {
             exit;
         }
         
+        // Regenerate session ID to prevent session fixation attacks (mirrors Auth::createSession())
+        session_regenerate_id(true);
+        // Store current session ID in database for single-session enforcement (mirrors Auth::createSession())
+        $stmt = $db->prepare("UPDATE users SET current_session_id = ? WHERE id = ?");
+        $stmt->execute([session_id(), $userId]);
+
         // Log successful login
         self::logSystemAction($userId, 'login_success_microsoft', 'user', $userId, 'Successful Microsoft Entra ID login');
         

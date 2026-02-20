@@ -79,6 +79,13 @@ try {
         "Add azure_oid column to users table"
     );
     
+    // Add index for azure_oid
+    executeSql(
+        $user_db,
+        "ALTER TABLE users ADD INDEX idx_azure_oid (azure_oid)",
+        "Add index for azure_oid column"
+    );
+    
     // Add deleted_at column to users table
     executeSql(
         $user_db,

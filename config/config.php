@@ -83,10 +83,14 @@ define('SMTP_FROM_EMAIL', _env('SMTP_FROM_EMAIL', ''));
 define('SMTP_FROM_NAME',  _env('SMTP_FROM_NAME', 'IBC Intranet'));
 
 // Azure / Microsoft Entra Settings
-define('AZURE_TENANT_ID',     _env('AZURE_TENANT_ID', ''));
-define('AZURE_CLIENT_ID',     _env('AZURE_CLIENT_ID', ''));
-define('AZURE_CLIENT_SECRET', _env('AZURE_CLIENT_SECRET', ''));
-define('AZURE_REDIRECT_URI',  _env('AZURE_REDIRECT_URI', ''));
+define('AZURE_TENANT_ID',     _env('AZURE_TENANT_ID',     _env('TENANT_ID', '')));
+define('AZURE_CLIENT_ID',     _env('AZURE_CLIENT_ID',     _env('CLIENT_ID', '')));
+define('AZURE_CLIENT_SECRET', _env('AZURE_CLIENT_SECRET', _env('CLIENT_SECRET', '')));
+define('AZURE_REDIRECT_URI',  _env('AZURE_REDIRECT_URI',  ''));
+
+if (AZURE_CLIENT_ID === '' || AZURE_CLIENT_SECRET === '') {
+    throw new \RuntimeException('Azure Konfiguration in der .env fehlt oder ist unvollständig');
+}
 
 // Legacy aliases for backward compatibility
 define('TENANT_ID',    AZURE_TENANT_ID);

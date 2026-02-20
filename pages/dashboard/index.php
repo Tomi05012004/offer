@@ -45,6 +45,10 @@ if (!empty($user['firstname']) && !empty($user['lastname'])) {
     $emailParts = explode('@', $user['email']);
     $displayName = $emailParts[0];
 }
+// Format name: remove dots and capitalize first letters
+if ($displayName !== 'Benutzer') {
+    $displayName = ucwords(str_replace('.', ' ', $displayName));
+}
 
 // Determine greeting based on time of day (German time)
 $timezone = new DateTimeZone('Europe/Berlin');
@@ -124,10 +128,6 @@ if (Auth::isBoard() || Auth::hasRole('head')) {
 $title = 'Dashboard - IBC Intranet';
 ob_start();
 ?>
-
-<?php if (Auth::isAdmin()): ?>
-<a href="../auth/debug_entra.php" style="background:red; color:white; padding:10px; display:block; text-align:center;">⚠️ Klicke hier zur Rollen-Diagnose ⚠️</a>
-<?php endif; ?>
 
 <?php if (!empty($user['prompt_profile_review']) && $user['prompt_profile_review'] == 1): ?>
 <!-- Profile Review Prompt Modal -->

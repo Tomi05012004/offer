@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   INDEX `idx_username` (`username`),
   INDEX `idx_email` (`email`),
   INDEX `idx_role` (`role`),
+  INDEX `idx_azure_oid` (`azure_oid`),
   INDEX `idx_deleted_at` (`deleted_at`),
   INDEX `idx_last_reminder_sent_at` (`last_reminder_sent_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

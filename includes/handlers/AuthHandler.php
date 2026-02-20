@@ -779,6 +779,11 @@ class AuthHandler {
                 $notifyProjects, $notifyEvents
             ]);
             $userId = $db->lastInsertId();
+
+            // Sync Entra data (displayName, mail, groups, role) for newly created users
+            if ($azureOid) {
+                self::syncEntraData($userId, $claims, $azureOid);
+            }
         }
         
         // Update or create alumni profile if first_name and last_name are available
@@ -947,5 +952,138 @@ class AuthHandler {
         $dashboardUrl = (defined('BASE_URL') && BASE_URL) ? BASE_URL . '/pages/dashboard/index.php' : '/pages/dashboard/index.php';
         header('Location: ' . $dashboardUrl);
         exit;
+    }
+
+    /**
+     * Sync Microsoft Entra ID data into the local users table on every login.
+     *
+     * Performs the following steps:
+     *  1. Updates displayName (first_name, last_name) and mail from the supplied claims.
+     *  2. Fetches the user's current group memberships from Microsoft Graph API.
+     *  3. Overwrites the entra_roles JSON field with the current group list.
+     *  4. Derives the primary local role from ROLE_MAPPING and updates it.
+     *
+     * @param int    $userId   Local database user ID.
+     * @param array  $userData Claims array from Microsoft Entra ID / OAuth token.
+     * @param string $azureOid Azure Object Identifier used for Graph API calls.
+     */
+    public static function syncEntraData(int $userId, array $userData, string $azureOid): void {
+        require_once __DIR__ . '/../services/MicrosoftGraphService.php';
+
+        $db = Database::getUserDB();
+
+        // --- 1. Extract displayName (first_name, last_name) and mail from claims ---
+        $firstName = $userData['given_name'] ?? $userData['givenName'] ?? null;
+        $lastName  = $userData['family_name'] ?? $userData['surname'] ?? null;
+
+        // Format names from Entra ID (e.g. "tom.lehmann" → "Tom Lehmann")
+        if ($firstName) {
+            $firstName = formatEntraName($firstName);
+        }
+        if ($lastName) {
+            $lastName = formatEntraName($lastName);
+        }
+
+        // Prefer explicit email/mail over UPN which may carry an #EXT# suffix
+        $mail = $userData['email'] ?? $userData['mail'] ?? $userData['preferred_username'] ?? null;
+
+        // --- 2. Fetch current group memberships from Microsoft Graph ---
+        $entraGroups = [];
+        try {
+            $graphService = new MicrosoftGraphService();
+            $profileData  = $graphService->getUserProfile($azureOid);
+            $entraGroups  = $profileData['groups'] ?? [];
+            error_log(sprintf('[syncEntraData] Fetched %d groups for user %d (azure_oid: %s)', count($entraGroups), $userId, $azureOid));
+        } catch (Exception $e) {
+            error_log('[syncEntraData] Failed to fetch groups for user ' . $userId . ': ' . $e->getMessage());
+        }
+
+        // --- 3. Overwrite entra_roles JSON field ---
+        try {
+            $entraRolesJson = json_encode($entraGroups, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            error_log('[syncEntraData] Failed to JSON-encode entra_groups for user ' . $userId . ': ' . $e->getMessage());
+            $entraRolesJson = '[]';
+        }
+
+        // --- 4. Determine primary local role from ROLE_MAPPING ---
+        $roleMapping = array_flip(ROLE_MAPPING);
+        $roleHierarchy = [
+            'candidate'       => 1,
+            'member'          => 2,
+            'head'            => 3,
+            'alumni'          => 4,
+            'honorary_member' => 5,
+            'board_finance'   => 6,
+            'board_internal'  => 7,
+            'board_external'  => 8,
+            'alumni_board'    => 9,
+            'alumni_auditor'  => 10,
+        ];
+
+        $highestPriority = 0;
+        $selectedRole    = 'member'; // Default to member when no group matches ROLE_MAPPING
+
+        foreach ($entraGroups as $group) {
+            $candidates = [];
+            if (is_array($group)) {
+                if (!empty($group['displayName'])) {
+                    $candidates[] = $group['displayName'];
+                }
+                if (!empty($group['id'])) {
+                    $candidates[] = $group['id'];
+                }
+            } else {
+                $candidates[] = (string) $group;
+            }
+
+            foreach ($candidates as $key) {
+                if (isset($roleMapping[$key])) {
+                    $internalRole = $roleMapping[$key];
+                    $priority     = $roleHierarchy[$internalRole] ?? 0;
+                    if ($priority > $highestPriority) {
+                        $highestPriority = $priority;
+                        $selectedRole    = $internalRole;
+                    }
+                }
+            }
+        }
+
+        // --- Build and execute UPDATE statement ---
+        $setClauses = ['entra_roles = ?', 'role = ?'];
+        $params     = [$entraRolesJson, $selectedRole];
+        if ($firstName !== null) {
+            $setClauses[] = 'first_name = ?';
+            $params[]     = $firstName;
+        }
+        if ($lastName !== null) {
+            $setClauses[] = 'last_name = ?';
+            $params[]     = $lastName;
+        }
+        if ($mail !== null) {
+            $setClauses[] = 'email = ?';
+            $params[]     = $mail;
+        }
+
+        $params[] = $userId;
+        $sql      = 'UPDATE users SET ' . implode(', ', $setClauses) . ' WHERE id = ?';
+
+        try {
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+        } catch (Exception $e) {
+            // Log but do not abort the login if the sync update fails
+            error_log('[syncEntraData] DB update failed for user ' . $userId . ': ' . $e->getMessage());
+            return;
+        }
+
+        error_log(sprintf(
+            '[syncEntraData] Synced user %d: role=%s, entra_roles=%d groups, first_name=%s, mail=%s',
+            $userId,
+            $selectedRole ?? '(unchanged)',
+            count($entraGroups),
+            $firstName ?? '(not updated)',
+            $mail       ?? '(not updated)'
+        ));
     }
 }

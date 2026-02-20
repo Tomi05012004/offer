@@ -672,7 +672,7 @@ body:not(.dark-mode) .sidebar a::after {
 /* Ensure sidebar links don't get position relative from general link rules */
 body:not(.dark-mode) .sidebar a {
     position: static !important;
-    display: block !important;
+    display: flex !important;
 }
 
 body:not(.dark-mode) a:not(.btn-primary):not(.no-underline):not(.sidebar a):hover {
@@ -1937,6 +1937,10 @@ body:not(.dark-mode) .card:hover::after {
     letter-spacing: 0.01em;
     transition: all var(--transition-normal);
     position: relative;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
 }
 
 .sidebar nav a:hover {

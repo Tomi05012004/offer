@@ -514,7 +514,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             
             <!-- Navigation Label -->
             <div class="px-5 mb-3">
-                <p class="text-[11px] font-semibold uppercase tracking-widest text-white/50">Navigation</p>
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-white/50 text-left">Navigation</p>
             </div>
             
             <nav aria-label="Hauptnavigation">
@@ -638,7 +638,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <?php if (Auth::canManageUsers() || Auth::isAdmin()): ?>
                 <div class="my-3 mx-4">
                     <div class="border-t border-white/10"></div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-white/40 mt-3 px-2">Administration</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-widest text-white/40 mt-3 px-2 text-left">Administration</p>
                 </div>
                 <?php endif; ?>
                 

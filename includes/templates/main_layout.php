@@ -814,9 +814,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             } elseif (!empty($lastname)) {
                 $greetingName = $lastname;
             } else {
-                // Derive name from email username using getFormattedName()
+                // Derive name from email username using getDisplayName()
                 $emailUsername = strpos($email, '@') !== false ? explode('@', $email)[0] : $email;
-                $greetingName = Auth::getFormattedName($emailUsername);
+                $greetingName = Auth::getDisplayName($emailUsername);
             }
             
             // Generate initials with proper fallbacks

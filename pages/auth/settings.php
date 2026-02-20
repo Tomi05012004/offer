@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../src/Auth.php';
 require_once __DIR__ . '/../../includes/helpers.php';
 require_once __DIR__ . '/../../includes/models/User.php';
 require_once __DIR__ . '/../../includes/handlers/GoogleAuthenticator.php';
+require_once __DIR__ . '/../../src/MailService.php';
 
 if (!Auth::check()) {
     header('Location: login.php');
@@ -83,6 +84,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Fehler beim Deaktivieren von 2FA';
         }
+    } elseif (isset($_POST['submit_change_request'])) {
+        try {
+            $requestType = trim($_POST['request_type'] ?? '');
+            $requestReason = trim($_POST['request_reason'] ?? '');
+
+            $allowedTypes = ['Rollenänderung', 'E-Mail-Adressenänderung'];
+            if (!in_array($requestType, $allowedTypes, true)) {
+                throw new Exception('Ungültiger Änderungstyp. Bitte wählen Sie eine gültige Option.');
+            }
+
+            if (strlen($requestReason) < 10) {
+                throw new Exception('Bitte geben Sie eine ausführlichere Begründung an (mindestens 10 Zeichen).');
+            }
+            if (strlen($requestReason) > 1000) {
+                throw new Exception('Die Begründung ist zu lang (maximal 1000 Zeichen).');
+            }
+
+            $currentRole = translateRole($user['role'] ?? '');
+
+            $emailBody = MailService::getTemplate(
+                'Änderungsantrag',
+                '<p>Ein Benutzer hat einen Änderungsantrag gestellt:</p>
+                <table class="info-table">
+                    <tr>
+                        <td class="info-label">E-Mail:</td>
+                        <td class="info-value">' . htmlspecialchars($user['email']) . '</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">Aktuelle Rolle:</td>
+                        <td class="info-value">' . htmlspecialchars($currentRole) . '</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">Art der Änderung:</td>
+                        <td class="info-value">' . htmlspecialchars($requestType) . '</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">Begründung / Neuer Wert:</td>
+                        <td class="info-value">' . nl2br(htmlspecialchars($requestReason)) . '</td>
+                    </tr>
+                </table>'
+            );
+
+            $emailSent = MailService::sendEmail(
+                'it@business-consulting.de',
+                'Änderungsantrag: ' . $requestType . ' von ' . $user['email'],
+                $emailBody
+            );
+
+            if ($emailSent) {
+                $message = 'Ihr Änderungsantrag wurde erfolgreich eingereicht!';
+            } else {
+                $error = 'Fehler beim Senden der E-Mail. Bitte versuchen Sie es später erneut.';
+            }
+        } catch (Exception $e) {
+            error_log('Error submitting change request: ' . $e->getMessage());
+            $error = htmlspecialchars($e->getMessage());
+        }
     }
 }
 
@@ -123,7 +181,7 @@ ob_start();
                     Zentral verwaltetes Profil
                 </h3>
                 <p class="text-blue-800 dark:text-blue-200">
-                    Ihr Profil wird zentral über Microsoft verwaltet. Änderungen an E-Mail oder Passwort bitte dort vornehmen.
+                    Ihr Profil wird zentral über Microsoft verwaltet. Änderungen an E-Mail oder Rolle können über das untenstehende Formular beantragt werden.
                 </p>
             </div>
         </div>
@@ -356,6 +414,58 @@ ob_start();
         </div>
 
     </div>
+
+    <!-- Change Request Section -->
+    <div class="mt-6">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+                <i class="fas fa-edit text-green-600 mr-2"></i>
+                Änderungsantrag
+            </h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                Beantragen Sie Änderungen an Ihrer Rolle oder E-Mail-Adresse
+            </p>
+
+            <form method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Art der Änderung *</label>
+                    <select
+                        name="request_type"
+                        required
+                        class="w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 rounded-lg"
+                    >
+                        <option value="">Bitte wählen...</option>
+                        <option value="Rollenänderung">Rollenänderung</option>
+                        <option value="E-Mail-Adressenänderung">E-Mail-Adressenänderung</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Begründung / Neuer Wert *</label>
+                    <textarea
+                        name="request_reason"
+                        required
+                        minlength="10"
+                        maxlength="1000"
+                        rows="4"
+                        placeholder="Bitte geben Sie eine Begründung oder den neuen gewünschten Wert an..."
+                        class="w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 rounded-lg"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mindestens 10, maximal 1000 Zeichen</p>
+                </div>
+
+                <button
+                    type="submit"
+                    name="submit_change_request"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                >
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Beantragen
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -402,17 +512,26 @@ if (newTheme === 'dark') {
 
 // Generate QR Code for 2FA if needed
 <?php if ($showQRCode): ?>
-var qrCode = new QRious({
-    element: document.getElementById('qrcode'),
-    value: '<?php echo $qrCodeUrl; ?>',
-    size: 250
+document.addEventListener('DOMContentLoaded', function() {
+    const qrcodeElement = document.getElementById('qrcode');
+    if (qrcodeElement) {
+        qrcodeElement.innerHTML = '';
+        new QRCode(qrcodeElement, {
+            text: <?php echo json_encode($qrCodeUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES); ?>,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
 });
 <?php endif; ?>
 </script>
 
 <!-- QR Code Library -->
 <?php if ($showQRCode): ?>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <?php endif; ?>
 
 <?php

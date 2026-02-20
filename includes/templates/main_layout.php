@@ -27,6 +27,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="<?php echo asset('assets/css/theme.css'); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -122,22 +123,15 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.2);
         }
         
-        /* Light mode mobile menu button styling */
-        body:not(.dark-mode) #mobile-menu-btn {
-            background: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        /* Mobile topbar and button styling */
+        #mobile-menu-btn {
+            border: none;
+            outline: none;
         }
         
-        body:not(.dark-mode) #mobile-menu-btn i {
-            color: var(--text-main); /* Dark text for visibility on white background */
-        }
-        
-        body.dark-mode #mobile-menu-btn {
-            background: var(--bg-secondary);
-        }
-        
-        body.dark-mode #mobile-menu-btn i {
-            color: var(--text-primary);
+        #mobile-menu-btn:focus-visible {
+            outline: 2px solid rgba(255,255,255,0.8);
+            outline-offset: 2px;
         }
         
         .card {
@@ -167,48 +161,32 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             opacity: 1;
         }
         .btn-primary {
-            background: linear-gradient(135deg, var(--ibc-green) 0%, var(--ibc-green-mid) 50%, var(--ibc-blue) 100%);
-            background-size: 200% 200%;
-            color: white;
-            padding: 0.75rem 2rem;
-            border-radius: var(--radius-md, 12px);
-            transition: all 0.3s ease;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            box-shadow: 0 4px 15px rgba(0, 166, 81, 0.3);
+            background: linear-gradient(135deg, var(--ibc-green) 0%, var(--ibc-green-mid) 50%, var(--ibc-blue) 100%) !important;
+            background-size: 200% 200% !important;
+            color: white !important;
+            padding: 0.75rem 2rem !important;
+            border-radius: var(--radius-md, 12px) !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.02em !important;
+            box-shadow: 0 4px 15px rgba(0, 166, 81, 0.3) !important;
+            border: none !important;
         }
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 166, 81, 0.4);
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(0, 166, 81, 0.4) !important;
+            color: white !important;
         }
         
         /* Mobile view improvements */
-        @media (max-width: 768px) {
-            /* Enhanced mobile menu button - always visible and accessible */
-            #mobile-menu-btn {
-                position: fixed !important;
-                top: 1rem !important;
-                left: 1rem !important;
-                z-index: 60 !important;
-                width: 48px;
-                height: 48px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 12px !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-                transition: all 0.3s ease;
-            }
-            
-            #mobile-menu-btn:active {
-                transform: scale(0.95);
-            }
-            
+        @media (max-width: 767px) {
             /* Sidebar improvements for mobile */
             .sidebar {
                 width: 85% !important;
                 max-width: 320px !important;
                 box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3) !important;
+                top: 0 !important;
+                /* Start below the topbar on mobile */
             }
             
             .sidebar .sidebar-scroll {
@@ -233,10 +211,12 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 hyphens: auto;
             }
             
-            /* Better spacing on mobile - add top padding for better visibility */
+            /* Better spacing on mobile - add top padding for topbar */
             main {
-                padding: 1rem !important;
-                padding-top: 5rem !important; /* Ensure content doesn't hide under toggle button */
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                padding-bottom: 1rem !important;
+                padding-top: 5rem !important; /* Ensure content doesn't hide under topbar */
                 margin-left: 0 !important;
             }
             
@@ -345,9 +325,10 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         }
         
         /* Tablet view improvements */
-        @media (min-width: 769px) and (max-width: 1024px) {
+        @media (min-width: 768px) and (max-width: 1024px) {
             main {
                 padding: 1.5rem !important;
+                padding-top: 1.5rem !important;
             }
             
             .card {
@@ -406,7 +387,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         }
         
         /* Landscape mobile optimization */
-        @media (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
+        @media (max-height: 500px) and (orientation: landscape) and (max-width: 767px) {
             /* Compact everything for landscape mobile */
             .sidebar {
                 width: 14rem !important;
@@ -418,14 +399,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             }
             
             main {
-                padding-top: 1rem !important;
-            }
-            
-            #mobile-menu-btn {
-                top: 0.5rem !important;
-                left: 0.5rem !important;
-                width: 40px !important;
-                height: 40px !important;
+                padding-top: 4rem !important;
             }
         }
         
@@ -511,19 +485,23 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     <!-- Mobile Menu Overlay -->
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-    <!-- Mobile Menu Toggle - Enhanced Design -->
-    <div class="md:hidden fixed top-4 left-4 z-50">
-        <button id="mobile-menu-btn" class="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95">
-            <svg class="w-6 h-6 text-gray-600 dark:text-white transition-transform duration-300" id="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path id="menu-icon-top" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16" class="transition-all duration-300"></path>
-                <path id="menu-icon-middle" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16" class="transition-all duration-300"></path>
-                <path id="menu-icon-bottom" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h16" class="transition-all duration-300"></path>
+    <!-- Mobile Top Navbar (visible only below md breakpoint) -->
+    <nav class="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 shadow-lg" style="background: var(--ibc-blue); min-height: 60px;">
+        <button id="mobile-menu-btn" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/20" aria-label="Menü öffnen" aria-expanded="false">
+            <svg class="w-6 h-6 text-white" id="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path id="menu-icon-top" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16" class="transition-all duration-300"></path>
+                <path id="menu-icon-middle" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 12h16" class="transition-all duration-300"></path>
+                <path id="menu-icon-bottom" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 18h16" class="transition-all duration-300"></path>
             </svg>
         </button>
-    </div>
+        <img src="<?php echo asset('assets/img/ibc_logo_original_navbar.webp'); ?>" alt="IBC Logo" class="h-8 w-auto drop-shadow-md">
+        <button id="mobile-theme-toggle" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 border border-white/20" aria-label="Darkmodus umschalten">
+            <i id="mobile-theme-icon" class="fas fa-moon text-white text-sm"></i>
+        </button>
+    </nav>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-72 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col">
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 md:w-72 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col">
         <?php 
         $currentUser = Auth::user();
         $userRole = $currentUser['role'] ?? '';
@@ -897,7 +875,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     </aside>
 
     <!-- Main Content -->
-    <main id="main-content" role="main" class="lg:ml-72 min-h-screen p-6 lg:p-10">
+    <main id="main-content" role="main" class="md:ml-64 lg:ml-72 min-h-screen p-4 pt-20 md:pt-4 md:p-6 lg:p-10">
         <?php if (isset($_SESSION['show_2fa_nudge']) && $_SESSION['show_2fa_nudge']): ?>
         <!-- 2FA Nudge Modal -->
         <div id="tfa-nudge-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -974,6 +952,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                     
                     // Animate hamburger to X and back
                     const isOpen = sidebar.classList.contains('open');
+                    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
                     if (isOpen) {
                         // Transform to X (opening sidebar)
                         menuIconTop?.setAttribute('d', 'M6 18L18 6');
@@ -1045,6 +1024,8 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         const themeToggle = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const themeText = document.getElementById('theme-text');
+        const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+        const mobileThemeIcon = document.getElementById('mobile-theme-icon');
         
         // Get user's saved theme preference from database (via data attribute)
         const userThemePreference = document.body.getAttribute('data-user-theme') || 'auto';
@@ -1054,29 +1035,17 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         
         // Apply theme based on preference
         function applyTheme(theme) {
-            if (theme === 'dark') {
+            const isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) {
                 document.body.classList.add('dark-mode', 'dark');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-                themeText.textContent = 'Lightmode';
-            } else if (theme === 'light') {
+                if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
+                if (themeText) themeText.textContent = 'Lightmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
+            } else {
                 document.body.classList.remove('dark-mode', 'dark');
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-                themeText.textContent = 'Darkmode';
-            } else { // auto
-                // Check system preference
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.body.classList.add('dark-mode', 'dark');
-                    themeIcon.classList.remove('fa-moon');
-                    themeIcon.classList.add('fa-sun');
-                    themeText.textContent = 'Lightmode';
-                } else {
-                    document.body.classList.remove('dark-mode', 'dark');
-                    themeIcon.classList.remove('fa-sun');
-                    themeIcon.classList.add('fa-moon');
-                    themeText.textContent = 'Darkmode';
-                }
+                if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
+                if (themeText) themeText.textContent = 'Darkmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
             }
         }
         
@@ -1091,16 +1060,34 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 // Switch to light mode
                 document.body.classList.remove('dark-mode', 'dark');
                 localStorage.setItem('theme', 'light');
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-                themeText.textContent = 'Darkmode';
+                if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
+                if (themeText) themeText.textContent = 'Darkmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
             } else {
                 // Switch to dark mode
                 document.body.classList.add('dark-mode', 'dark');
                 localStorage.setItem('theme', 'dark');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-                themeText.textContent = 'Lightmode';
+                if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
+                if (themeText) themeText.textContent = 'Lightmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
+            }
+        });
+
+        // Mobile theme toggle (synced with sidebar toggle)
+        mobileThemeToggle?.addEventListener('click', () => {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            if (isDarkMode) {
+                document.body.classList.remove('dark-mode', 'dark');
+                localStorage.setItem('theme', 'light');
+                if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
+                if (themeText) themeText.textContent = 'Darkmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
+            } else {
+                document.body.classList.add('dark-mode', 'dark');
+                localStorage.setItem('theme', 'dark');
+                if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
+                if (themeText) themeText.textContent = 'Lightmode';
+                if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
             }
         });
         
@@ -1125,6 +1112,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         updateLiveClock();
         setInterval(updateLiveClock, 1000);
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmLWYePkbKfTkJXaJ4pYoEnJaSRh" crossorigin="anonymous"></script>
 </body>
 </html>
 <!-- ✅ Sidebar visibility: Invoices restricted to board_finance only via canManageInvoices() -->

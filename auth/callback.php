@@ -4,6 +4,9 @@
  * This file handles the redirect callback from Azure AD after user authentication.
  */
 
+// Start session immediately – must be the first statement
+session_start();
+
 // Load Composer autoloader
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -27,24 +30,17 @@ $userEmail    = null;
 
 // Handle the Microsoft callback
 try {
+    // Check for OAuth errors returned by Azure – show the real reason from Microsoft
+    if (isset($_GET['error'])) {
+        die('OAuth-Fehler von Microsoft: ' . htmlspecialchars($_GET['error_description'] ?? $_GET['error']));
+    }
+
     // Validate state for CSRF protection
     if (!isset($_GET['state']) || !isset($_SESSION['oauth2state']) || $_GET['state'] !== $_SESSION['oauth2state']) {
-        $stateMsg = sprintf(
-            "[OAuth] State validation failed. GET state: %s | SESSION state: %s | Match: %s",
-            $stateGet    ?? 'not set',
-            $stateSession ?? 'not set',
-            $stateMatch ? 'yes' : 'no'
-        );
-        error_log($stateMsg);
         unset($_SESSION['oauth2state']);
-        throw new Exception('Invalid state parameter');
+        die('State mismatch: Session-State ' . ($stateSession ?? 'not set') . ' vs GET-State ' . ($stateGet ?? 'not set'));
     }
     unset($_SESSION['oauth2state']);
-
-    // Check for OAuth errors returned by Azure
-    if (isset($_GET['error'])) {
-        throw new Exception('OAuth error: ' . ($_GET['error_description'] ?? $_GET['error']));
-    }
 
     // Check for authorization code
     if (!isset($_GET['code'])) {
@@ -78,7 +74,7 @@ try {
     } catch (Exception $tokenEx) {
         $tokenError = $tokenEx->getMessage();
         error_log("[OAuth] getAccessToken() failed: " . $tokenError);
-        throw $tokenEx;
+        die('Token-Fehler beim Austausch des Autorisierungscodes: ' . $tokenEx->getMessage());
     }
 
     // Get resource owner (user) details and claims

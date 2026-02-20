@@ -29,6 +29,18 @@ try {
 if (empty($links)) {
     $links = [
         [
+            'title'       => 'IBC Website',
+            'url'         => 'https://www.business-consulting.de',
+            'description' => 'Offizielle IBC-Vereinswebsite',
+            'icon'        => 'fas fa-globe',
+        ],
+        [
+            'title'       => 'EasyVerein',
+            'url'         => 'https://app.easyverein.com',
+            'description' => 'Mitgliederverwaltung und Vereinsbuchhaltung',
+            'icon'        => 'fas fa-users-cog',
+        ],
+        [
             'title'       => 'Microsoft 365',
             'url'         => 'https://www.office.com',
             'description' => 'Office-Apps, E-Mail und Kalender',

@@ -187,8 +187,8 @@ ob_start();
                 Hinweis zu Systemeinstellungen
             </h3>
             <p class="text-sm text-blue-800 dark:text-blue-200">
-                Einige Einstellungen erfordern möglicherweise einen Server-Neustart oder eine Cache-Löschung, um wirksam zu werden. 
-                Änderungen an Sicherheitseinstellungen sollten mit Vorsicht vorgenommen werden.
+                Einige Einstellungen erfordern möglicherweise einen Server-Neustart oder eine Cache-Löschung, um wirksam zu werden.
+                Sicherheitseinstellungen (Passwörter, MFA, Zugriffsrichtlinien) werden über Microsoft Entra verwaltet.
             </p>
         </div>
     </div>

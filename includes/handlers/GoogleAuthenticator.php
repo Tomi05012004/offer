@@ -74,9 +74,12 @@ class PHPGangsta_GoogleAuthenticator
      * @return string
      */
     public function getQRCodeGoogleUrl($name, $secret, $title = null) {
-        $otpauth = 'otpauth://totp/'.$name.'?secret='.$secret;
-        if(isset($title)) {
-            $otpauth .= '&issuer='.$title;
+        $label = isset($title)
+            ? urlencode($title) . ':' . urlencode($name)
+            : urlencode($name);
+        $otpauth = 'otpauth://totp/' . $label . '?secret=' . urlencode($secret);
+        if (isset($title)) {
+            $otpauth .= '&issuer=' . urlencode($title);
         }
         // Use QR Server API - a free and reliable alternative to deprecated Google Charts API
         return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='.urlencode($otpauth);
@@ -91,9 +94,12 @@ class PHPGangsta_GoogleAuthenticator
      * @return string
      */
     public function getQRCodeUrl($name, $secret, $title = null) {
-        $otpauth = 'otpauth://totp/'.urlencode($name).'?secret='.urlencode($secret);
-        if(isset($title)) {
-            $otpauth .= '&issuer='.urlencode($title);
+        $label = isset($title)
+            ? urlencode($title) . ':' . urlencode($name)
+            : urlencode($name);
+        $otpauth = 'otpauth://totp/' . $label . '?secret=' . urlencode($secret);
+        if (isset($title)) {
+            $otpauth .= '&issuer=' . urlencode($title);
         }
         return $otpauth;
     }

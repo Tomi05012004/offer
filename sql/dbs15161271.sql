@@ -531,4 +531,17 @@ CREATE TABLE IF NOT EXISTS `links` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Useful links for quick access to frequently used tools and resources';
 
+-- ================================================
+-- SEED DATA: links
+-- ================================================
+INSERT IGNORE INTO `links` (`id`, `title`, `url`, `description`, `icon`, `sort_order`) VALUES
+(1,  'IBC Website',           'https://www.business-consulting.de', 'Offizielle IBC-Vereinswebsite',              'fas fa-globe',        1),
+(2,  'EasyVerein',            'https://app.easyverein.com',         'Mitgliederverwaltung und Vereinsbuchhaltung', 'fas fa-users-cog',    2),
+(3,  'Microsoft 365',         'https://www.office.com',             'Office-Apps, E-Mail und Kalender',            'fab fa-microsoft',    3),
+(4,  'Microsoft Entra Admin', 'https://entra.microsoft.com',        'Benutzerverwaltung und Identitäten',          'fas fa-id-badge',     4),
+(5,  'SharePoint',            'https://sharepoint.com',             'Dokumente und Zusammenarbeit',                'fas fa-folder-open',  5),
+(6,  'Teams',                 'https://teams.microsoft.com',        'Chats, Meetings und Kanäle',                  'fas fa-comments',     6),
+(7,  'Azure Portal',          'https://portal.azure.com',           'Cloud-Infrastruktur und Dienste',             'fas fa-cloud',        7),
+(8,  'GitHub',                'https://github.com',                 'Quellcode und Versionsverwaltung',            'fab fa-github',       8);
+
 COMMIT;

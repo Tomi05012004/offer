@@ -486,8 +486,8 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Mobile Top Navbar (visible only below md breakpoint) -->
-    <nav class="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 shadow-lg" style="background: var(--ibc-blue); min-height: 60px;">
-        <button id="mobile-menu-btn" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/20" aria-label="Menü öffnen" aria-expanded="false">
+    <nav class="mobile-topbar md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-4 py-3 shadow-lg">
+        <button id="mobile-menu-btn" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/20" aria-label="Menü öffnen" aria-expanded="false" aria-controls="sidebar">
             <svg class="w-6 h-6 text-white" id="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path id="menu-icon-top" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16" class="transition-all duration-300"></path>
                 <path id="menu-icon-middle" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 12h16" class="transition-all duration-300"></path>
@@ -495,7 +495,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             </svg>
         </button>
         <img src="<?php echo asset('assets/img/ibc_logo_original_navbar.webp'); ?>" alt="IBC Logo" class="h-8 w-auto drop-shadow-md">
-        <button id="mobile-theme-toggle" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 border border-white/20" aria-label="Darkmodus umschalten">
+        <button id="mobile-theme-toggle" class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 border border-white/20" aria-label="Zu Darkmode wechseln">
             <i id="mobile-theme-icon" class="fas fa-moon text-white text-sm"></i>
         </button>
     </nav>
@@ -953,6 +953,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                     // Animate hamburger to X and back
                     const isOpen = sidebar.classList.contains('open');
                     btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    btn.setAttribute('aria-label', isOpen ? 'Menü schließen' : 'Menü öffnen');
                     if (isOpen) {
                         // Transform to X (opening sidebar)
                         menuIconTop?.setAttribute('d', 'M6 18L18 6');
@@ -1041,11 +1042,13 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
                 if (themeText) themeText.textContent = 'Lightmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
+                if (mobileThemeToggle) mobileThemeToggle.setAttribute('aria-label', 'Zu Lightmode wechseln');
             } else {
                 document.body.classList.remove('dark-mode', 'dark');
                 if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
                 if (themeText) themeText.textContent = 'Darkmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
+                if (mobileThemeToggle) mobileThemeToggle.setAttribute('aria-label', 'Zu Darkmode wechseln');
             }
         }
         
@@ -1063,6 +1066,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
                 if (themeText) themeText.textContent = 'Darkmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
+                if (mobileThemeToggle) mobileThemeToggle.setAttribute('aria-label', 'Zu Darkmode wechseln');
             } else {
                 // Switch to dark mode
                 document.body.classList.add('dark-mode', 'dark');
@@ -1070,6 +1074,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
                 if (themeText) themeText.textContent = 'Lightmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
+                if (mobileThemeToggle) mobileThemeToggle.setAttribute('aria-label', 'Zu Lightmode wechseln');
             }
         });
 
@@ -1082,12 +1087,14 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
                 if (themeText) themeText.textContent = 'Darkmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-sun'); mobileThemeIcon.classList.add('fa-moon'); }
+                mobileThemeToggle.setAttribute('aria-label', 'Zu Darkmode wechseln');
             } else {
                 document.body.classList.add('dark-mode', 'dark');
                 localStorage.setItem('theme', 'dark');
                 if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
                 if (themeText) themeText.textContent = 'Lightmode';
                 if (mobileThemeIcon) { mobileThemeIcon.classList.remove('fa-moon'); mobileThemeIcon.classList.add('fa-sun'); }
+                mobileThemeToggle.setAttribute('aria-label', 'Zu Lightmode wechseln');
             }
         });
         

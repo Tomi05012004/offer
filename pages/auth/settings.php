@@ -466,7 +466,51 @@ ob_start();
         </div>
     </div>
 
+    <!-- Support Section -->
+    <div class="mt-6">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+                <i class="fas fa-life-ring text-blue-600 mr-2"></i>
+                Änderungen &amp; Support
+            </h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                Wende dich bei Fragen oder Problemen direkt an die IT-Ressortleitung
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="mailto:ressortleitung-it@business-consulting.de?subject=E-Mail%2FName%20%C3%A4ndern"
+                   class="flex items-center p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">
+                    <i class="fas fa-envelope text-blue-600 dark:text-blue-400 text-2xl mr-4"></i>
+                    <div>
+                        <span class="block font-semibold text-gray-800 dark:text-gray-100">E-Mail/Name ändern</span>
+                        <span class="block text-sm text-gray-600 dark:text-gray-400">Anfrage per E-Mail senden</span>
+                    </div>
+                </a>
+                <a href="mailto:ressortleitung-it@business-consulting.de?subject=2FA%20zur%C3%BCcksetzen"
+                   class="flex items-center p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition">
+                    <i class="fas fa-shield-alt text-yellow-600 dark:text-yellow-400 text-2xl mr-4"></i>
+                    <div>
+                        <span class="block font-semibold text-gray-800 dark:text-gray-100">2FA zurücksetzen</span>
+                        <span class="block text-sm text-gray-600 dark:text-gray-400">Anfrage per E-Mail senden</span>
+                    </div>
+                </a>
+                <a href="mailto:ressortleitung-it@business-consulting.de?subject=Bug%20melden"
+                   class="flex items-center p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition">
+                    <i class="fas fa-bug text-red-600 dark:text-red-400 text-2xl mr-4"></i>
+                    <div>
+                        <span class="block font-semibold text-gray-800 dark:text-gray-100">Bug melden</span>
+                        <span class="block text-sm text-gray-600 dark:text-gray-400">Fehler per E-Mail melden</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<!-- QR Code Library -->
+<?php if ($showQRCode): ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<?php endif; ?>
 
 <script>
 // Make theme selection more interactive
@@ -528,11 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 <?php endif; ?>
 </script>
-
-<!-- QR Code Library -->
-<?php if ($showQRCode): ?>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

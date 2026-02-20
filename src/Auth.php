@@ -600,6 +600,17 @@ class Auth {
     }
     
     /**
+     * Format a username (e.g., "tom.lehmann") into a display name ("Tom Lehmann").
+     * Replaces dots with spaces and capitalizes each word.
+     *
+     * @param string $username Username to format (e.g., the part before @ in an email address)
+     * @return string Formatted display name with each word capitalized
+     */
+    public static function getFormattedName(string $username): string {
+        return ucwords(str_replace('.', ' ', $username));
+    }
+
+    /**
      * Get German display name for a role
      * 
      * @param string $role Role internal key

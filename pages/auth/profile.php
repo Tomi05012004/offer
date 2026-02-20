@@ -824,6 +824,42 @@ ob_start();
         </div>
     </div>
 
+    <!-- Organisatorische Rolle (aus Microsoft Entra) -->
+    <div class="lg:col-span-2">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+                <i class="fas fa-id-badge text-indigo-600 mr-2"></i>
+                Organisatorische Rolle (aus Microsoft Entra)
+            </h2>
+            <?php
+            $entraDisplayRoles = [];
+            if (!empty($user['entra_roles'])) {
+                $entraRolesData = json_decode($user['entra_roles'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($entraRolesData)) {
+                    $entraDisplayRoles = extractGroupDisplayNames($entraRolesData);
+                }
+            }
+            ?>
+            <?php if (!empty($entraDisplayRoles)): ?>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <?php foreach ($entraDisplayRoles as $role): ?>
+                    <span class="px-3 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 rounded-full font-semibold text-sm">
+                        <?php echo htmlspecialchars($role); ?>
+                    </span>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">Keine Entra-Rollen zugewiesen.</p>
+            <?php endif; ?>
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-500 p-4">
+                <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Deine Rolle wird automatisch über dein Microsoft-Konto synchronisiert. Bei Unstimmigkeiten wende dich bitte an den Vorstand Intern.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- 2FA Settings -->
     <div class="lg:col-span-2">
         <div class="card p-6">

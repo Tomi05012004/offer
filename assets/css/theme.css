@@ -1964,6 +1964,26 @@ body:not(.dark-mode) .card:hover::after {
     opacity: 1;
 }
 
+/* Global: remove text-decoration from sidebar links and sidebar buttons */
+.sidebar a,
+.sidebar button {
+    text-decoration: none !important;
+}
+
+/* Remove text-decoration from anchor-styled buttons globally */
+a.btn,
+a.btn-primary,
+a.btn-secondary {
+    text-decoration: none !important;
+}
+
+/* Sidebar hover - rounded corners and smooth background transition */
+.sidebar nav a,
+.sidebar .border-white\/30 {
+    border-radius: 10px;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease !important;
+}
+
 /* Premium Button System */
 .btn-primary {
     background: linear-gradient(135deg, var(--ibc-green) 0%, var(--ibc-green-mid) 50%, var(--ibc-blue) 100%);

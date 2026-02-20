@@ -544,7 +544,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Projekte (All) -->
                 <a href="<?php echo asset('pages/projects/index.php'); ?>" 
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/projects/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
-                    <i class="fas fa-folder w-5 mr-3"></i>
+                    <i class="fas fa-project-diagram w-5 mr-3"></i>
                     <span>Projekte</span>
                 </a>
 
@@ -616,13 +616,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 </a>
                 <?php endif; ?>
 
-                <!-- Einstellungen (All authenticated users) -->
-                <a href="<?php echo asset('pages/auth/settings.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/auth/settings.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
-                    <i class="fas fa-cog w-5 mr-3"></i>
-                    <span>Einstellungen</span>
-                </a>
-
                 <!-- Schulungsanfrage (Alumni, Alumni-Board) -->
                 <?php if (Auth::canAccessPage('training_requests')): ?>
                 <a href="<?php echo asset('pages/alumni/requests.php'); ?>" 
@@ -655,6 +648,15 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                    class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/index.php') || (isActivePath('/admin/') && !isActivePath('/admin/users') && !isActivePath('/admin/stats') && !isActivePath('/admin/audit') && !isActivePath('/admin/db_maintenance') && !isActivePath('/admin/settings')) ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                     <span>Dashboard</span>
+                </a>
+                <?php endif; ?>
+
+                <!-- Masseneinladungen (Admins only) -->
+                <?php if (Auth::isAdmin()): ?>
+                <a href="<?php echo asset('pages/admin/mass_invitations.php'); ?>" 
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/mass_invitations.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                    <i class="fas fa-mail-bulk w-5 mr-3"></i>
+                    <span>Masseneinladungen</span>
                 </a>
                 <?php endif; ?>
                 
@@ -846,9 +848,15 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             <div class='mb-3 space-y-2'>
                 <!-- Profilangaben -->
                 <a href='<?php echo asset('pages/auth/profile.php'); ?>' 
-                   class='flex items-center justify-center w-full px-4 py-2 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/profile.php') ? 'bg-white/10' : ''; ?>'>
+                   class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/profile.php') ? 'bg-white/10' : ''; ?>'>
                     <i class='fas fa-user text-xs mr-2'></i> 
                     <span>Mein Profil</span>
+                </a>
+                <!-- Einstellungen (sub-item under Mein Profil) -->
+                <a href='<?php echo asset('pages/auth/settings.php'); ?>' 
+                   class='flex items-center justify-start w-full px-4 py-2 pl-8 text-xs font-medium text-white/80 dark:text-slate-300 border border-white/20 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/settings.php') ? 'bg-white/10' : ''; ?>'>
+                    <i class='fas fa-cog text-xs mr-2'></i> 
+                    <span>Einstellungen</span>
                 </a>
             </div>
             

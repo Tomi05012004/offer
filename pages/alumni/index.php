@@ -145,7 +145,25 @@ ob_start();
     <?php else: ?>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <?php foreach ($profiles as $profile): ?>
-                <div class="card p-6 hover:shadow-xl transition-shadow">
+                <?php
+                // Determine role badge color
+                $roleBadgeColors = [
+                    'alumni'          => 'bg-gray-100 text-gray-800 border-gray-300',
+                    'alumni_board'    => 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    'alumni_auditor'  => 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    'honorary_member' => 'bg-amber-100 text-amber-800 border-amber-300',
+                ];
+                $badgeClass = $roleBadgeColors[$profile['role'] ?? ''] ?? 'bg-gray-100 text-gray-800 border-gray-300';
+                $displayRole = htmlspecialchars($profile['display_role'] ?? Auth::getRoleLabel($profile['role'] ?? ''));
+                ?>
+                <div class="card p-6 hover:shadow-xl transition-shadow relative">
+                    <!-- Role Badge: Top Right Corner -->
+                    <div class="absolute top-4 right-4">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full border <?php echo $badgeClass; ?>">
+                            <?php echo $displayRole; ?>
+                        </span>
+                    </div>
+                    
                     <!-- Profile Image -->
                     <div class="flex justify-center mb-4">
                         <?php 

@@ -164,9 +164,9 @@ ob_start();
                     'honorary_member' => 'bg-amber-100 text-amber-800 border-amber-300',
                 ];
                 
-                // Always display the admin-assigned role using the canonical German label
+                // Display role: prefer Entra-derived display_role, fall back to local role label
                 $badgeClass = $roleBadgeColors[$member['role']] ?? 'bg-gray-100 text-gray-800 border-gray-300';
-                $displayRole = htmlspecialchars(Auth::getRoleLabel($member['role']));
+                $displayRole = htmlspecialchars($member['display_role'] ?? Auth::getRoleLabel($member['role']));
                 
                 // Generate initials for fallback
                 $initials = strtoupper(substr($member['first_name'], 0, 1) . substr($member['last_name'], 0, 1));

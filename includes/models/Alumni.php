@@ -290,19 +290,50 @@ class Alumni extends Database {
             $userIds = array_column($profiles, 'user_id');
             
             try {
-                // Fetch all user roles in a single query
-                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-                $userStmt = $userDb->prepare("SELECT id, role FROM users WHERE id IN ($placeholders)");
-                $userStmt->execute($userIds);
-                $userRoles = $userStmt->fetchAll(PDO::FETCH_KEY_PAIR); // id => role mapping
+                require_once __DIR__ . '/../../src/Auth.php';
                 
-                // Filter profiles by role
+                // Fetch all user roles and entra_roles in a single query
+                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+                $userStmt = $userDb->prepare("SELECT id, role, entra_roles FROM users WHERE id IN ($placeholders)");
+                $userStmt->execute($userIds);
+                $userDataMap = [];
+                foreach ($userStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $userDataMap[$row['id']] = $row;
+                }
+                
+                // Filter profiles by role and resolve display_role from Entra data
                 foreach ($profiles as $profile) {
                     $userId = $profile['user_id'];
-                    $userRole = $userRoles[$userId] ?? null;
+                    $userData = $userDataMap[$userId] ?? null;
+                    $userRole = $userData['role'] ?? null;
                     
                     // Only include profiles where user has role 'alumni', 'alumni_board', or 'honorary_member'
                     if (in_array($userRole, ['alumni', 'alumni_board', 'honorary_member'])) {
+                        $profile['role'] = $userRole;
+                        
+                        // Resolve display_role: prefer Entra display names, fall back to role label
+                        $displayRole = null;
+                        $entraRolesJson = $userData['entra_roles'] ?? null;
+                        if (!empty($entraRolesJson)) {
+                            $entraRolesArray = json_decode($entraRolesJson, true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($entraRolesArray) && !empty($entraRolesArray)) {
+                                $displayNames = [];
+                                foreach ($entraRolesArray as $entraRole) {
+                                    if (is_array($entraRole) && isset($entraRole['displayName'])) {
+                                        $displayNames[] = $entraRole['displayName'];
+                                    } elseif (is_array($entraRole) && isset($entraRole['id'])) {
+                                        $displayNames[] = Auth::getRoleLabel($entraRole['id']);
+                                    } elseif (is_string($entraRole)) {
+                                        $displayNames[] = Auth::getRoleLabel($entraRole);
+                                    }
+                                }
+                                if (!empty($displayNames)) {
+                                    $displayRole = implode(', ', $displayNames);
+                                }
+                            }
+                        }
+                        $profile['display_role'] = $displayRole ?? Auth::getRoleLabel($userRole);
+                        
                         $result[] = $profile;
                     }
                 }

@@ -83,7 +83,9 @@ try {
 
     // Extract azure_oid from the oid or sub claim
     $azureOid  = $claims['oid'] ?? $claims['sub'] ?? null;
-    $userEmail = $claims['mail'] ?? $claims['userPrincipalName'] ?? $claims['email'] ?? null;
+    // Prefer 'email' or 'mail' over 'userPrincipalName' – guests often have a
+    // cryptic #EXT# address as their UPN while 'email'/'mail' holds the real one.
+    $userEmail = $claims['email'] ?? $claims['mail'] ?? $claims['userPrincipalName'] ?? null;
     error_log(sprintf("[OAuth] Claims received. azure_oid: %s | email: %s", $azureOid ?? 'null', $userEmail ?? 'null'));
 
     // Look up user in local database by azure_oid
@@ -95,19 +97,19 @@ try {
         $existingUser = $stmt->fetch() ?: null;
     }
 
-    // Fallback for guest users: if not found by azure_oid, try matching via the 'mail' claim
-    // (Microsoft returns a cryptic UPN for guests, but 'mail' contains their real e-mail address)
-    if (!$existingUser && !empty($claims['mail'])) {
+    // Fallback for guest users: if not found by azure_oid, try matching via the best
+    // available e-mail address (covers 'email', 'mail', and 'userPrincipalName' in that order)
+    if (!$existingUser && !empty($userEmail)) {
         $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$claims['mail']]);
+        $stmt->execute([$userEmail]);
         $existingUser = $stmt->fetch() ?: null;
 
         // Immediately store the azure_oid so future logins are faster and unambiguous.
-        // Only update when azure_oid is still NULL to avoid race-condition overwrites.
+        // Update when azure_oid is still NULL or when it differs from the current Microsoft OID.
         if ($existingUser && $azureOid) {
-            $updateStmt = $db->prepare("UPDATE users SET azure_oid = ? WHERE id = ? AND azure_oid IS NULL");
-            $updateStmt->execute([$azureOid, $existingUser['id']]);
-            error_log(sprintf("[OAuth] Stored azure_oid %s for user id %d (matched via mail claim)", $azureOid, $existingUser['id']));
+            $updateStmt = $db->prepare("UPDATE users SET azure_oid = ? WHERE id = ? AND (azure_oid IS NULL OR azure_oid != ?)");
+            $updateStmt->execute([$azureOid, $existingUser['id'], $azureOid]);
+            error_log(sprintf("[OAuth] Stored azure_oid %s for user id %d (matched via email claim)", $azureOid, $existingUser['id']));
         }
     }
 

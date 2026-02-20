@@ -71,6 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_2fa'])) {
                     // Update last login
                     $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
                     $stmt->execute([$userId]);
+
+                    // Regenerate session ID to prevent session fixation attacks
+                    session_regenerate_id(true);
+                    // Store current session ID in database for single-session enforcement
+                    $stmt = $db->prepare("UPDATE users SET current_session_id = ? WHERE id = ?");
+                    $stmt->execute([session_id(), $userId]);
                     
                     // Log successful 2FA verification
                     AuthHandler::logSystemAction($userId, 'login_2fa_success', 'user', $userId, '2FA verification successful');

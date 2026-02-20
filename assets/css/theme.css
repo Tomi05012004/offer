@@ -1947,7 +1947,8 @@ body:not(.dark-mode) .card:hover::after {
 }
 
 .sidebar nav a:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 5px !important;
     transform: translateX(4px);
 }
 
@@ -1987,8 +1988,18 @@ a.btn-secondary {
 /* Sidebar hover - rounded corners and smooth background transition */
 .sidebar nav a,
 .sidebar .border-white\/30 {
-    border-radius: 10px;
+    border-radius: 5px;
     transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease !important;
+}
+
+/* Sidebar profile section: left-aligned in both light and dark mode */
+.sidebar .mt-auto {
+    text-align: left !important;
+}
+.sidebar .mt-auto p,
+.sidebar .mt-auto a,
+.sidebar .mt-auto button {
+    text-align: left !important;
 }
 
 /* Premium Button System */

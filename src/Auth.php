@@ -600,14 +600,26 @@ class Auth {
     }
     
     /**
+     * Convert a username (e.g., "tom.lehmann") into a human-readable display name ("Tom Lehmann").
+     * Replaces dots with spaces and capitalises each word with ucwords().
+     *
+     * @param string $username Username to format (e.g., the part before @ in an email address)
+     * @return string Formatted display name with each word capitalised
+     */
+    public static function getDisplayName(string $username): string {
+        return ucwords(str_replace('.', ' ', $username));
+    }
+
+    /**
      * Format a username (e.g., "tom.lehmann") into a display name ("Tom Lehmann").
      * Replaces dots with spaces and capitalizes each word.
      *
      * @param string $username Username to format (e.g., the part before @ in an email address)
      * @return string Formatted display name with each word capitalized
+     * @deprecated Use getDisplayName() instead
      */
     public static function getFormattedName(string $username): string {
-        return ucwords(str_replace('.', ' ', $username));
+        return self::getDisplayName($username);
     }
 
     /**

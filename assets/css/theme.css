@@ -2,7 +2,7 @@
 
 :root {
     /* Light Mode Variables - Source of Truth */
-    --bg-body: #f9fafb; /* Light Gray */
+    --bg-body: #f8f9fa; /* Light Gray - softened */
     --bg-card: #ffffff; /* White */
     --bg-input: #ffffff; /* White for input fields */
     --text-main: #111827; /* Almost Black - Important for readability */
@@ -17,8 +17,8 @@
     --gradient-select-hover: linear-gradient(to bottom, #ffffff 0%, #f0f7ff 100%);
     
     /* Legacy compatibility variables */
-    --bg-main: #f9fafb; /* Alias for --bg-body */
-    --bg-color: #f9fafb; /* Light Gray */
+    --bg-main: #f8f9fa; /* Alias for --bg-body */
+    --bg-color: #f8f9fa; /* Light Gray */
     --text-color: #111827; /* Dark Grey/Black */
     --card-bg: #ffffff; /* White */
     
@@ -78,10 +78,10 @@
     --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Card Shadows - Enhanced for Light Mode */
-    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.06);
-    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08), 0 20px 40px rgba(0,0,0,0.12);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.07);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.09), 0 20px 40px rgba(0,0,0,0.11);
     --shadow-elevated: 0 8px 30px rgba(0,0,0,0.12);
-    --shadow-glow-blue: 0 0 20px rgba(0, 102, 179, 0.15), 0 4px 12px rgba(0, 102, 179, 0.1);
+    --shadow-glow-blue: 0 0 20px rgba(0, 102, 179, 0.20), 0 4px 12px rgba(0, 102, 179, 0.14);
     --shadow-inner-glow: inset 0 2px 8px rgba(255, 255, 255, 0.8);
 
     /* Spacing & Layout */
@@ -188,6 +188,9 @@ body {
 /* Sidebar - Permanent Corporate Blue (IBC-Blau) for Light and Dark Mode */
 .sidebar {
     background: linear-gradient(180deg, var(--ibc-blue-dark) 0%, var(--ibc-blue) 40%, var(--ibc-blue-darker) 100%) !important;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
 }
 
 /* Sidebar Text - Always White on Blue Background */
@@ -235,8 +238,9 @@ body:not(.dark-mode) .sidebar a:hover {
 /* Sidebar Active State - White Background with IBC Green Border */
 .sidebar a.active,
 .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    border-right: 4px solid var(--ibc-green) !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    border-right: none !important;
+    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 31, 56, 0.3) !important;
 }
 
 /* Dark Mode: Enhanced Sidebar Styling */
@@ -1354,7 +1358,8 @@ body:not(.dark-mode) .text-ibc-blue {
 /* Light Mode: Kartenhintergrund sicherstellen */
 body:not(.dark-mode) .card {
     background-color: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.07) !important;
 }
 
 /* Dark Mode: Alles erzwingen hell zu sein */
@@ -1885,7 +1890,7 @@ body.dark-mode .text-green-500 {
     background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     transition: all var(--transition-slow);
     position: relative;
     overflow: hidden;
@@ -1944,6 +1949,7 @@ body:not(.dark-mode) .card:hover::after {
     align-items: center !important;
     justify-content: flex-start !important;
     text-align: left !important;
+    overflow: hidden;
 }
 
 .sidebar nav a:hover {
@@ -1954,9 +1960,9 @@ body:not(.dark-mode) .card:hover::after {
 
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
     border-right: none !important;
-    box-shadow: inset 3px 0 0 var(--ibc-green);
+    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 79, 140, 0.25);
     border-radius: 10px !important;
 }
 
@@ -3923,12 +3929,12 @@ body:not(.dark-mode) .hero-gradient .hero-date {
 
 /* --- LIGHT/DARK MODE GLOBALS --- */
 body.light-mode {
-    background-color: #f3f4f6 !important; /* Helles Grau für den Body */
+    background-color: #f8f9fa !important; /* Helles Grau für den Body - softened */
     color: #1f2937 !important; /* Dunkles Grau für Text */
 }
 body.light-mode .card, body.light-mode .bg-white {
     background-color: #ffffff !important;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e9ecef;
 }
 body.dark-mode {
     background-color: #111827 !important; /* Sehr dunkles Grau */
@@ -3947,9 +3953,18 @@ body.dark-mode {
         z-index: 1050;
         transform: translateX(-100%); /* Standardmäßig versteckt */
         transition: transform 0.3s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
     .sidebar.open {
         transform: translateX(0); /* Zeigen wenn Klasse 'open' */
+    }
+    .sidebar nav,
+    .sidebar .sidebar-scroll {
+        max-width: 100%;
+        overflow-x: hidden;
     }
     .main-content {
         margin-left: 0 !important; /* Kein Rand auf Handy */

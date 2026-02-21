@@ -125,7 +125,21 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         body.dark-mode .sidebar-scroll {
             scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.2);
         }
-        
+
+        /* Sidebar navigation items - rounded pill style */
+        .sidebar nav > a,
+        .sidebar nav .menu-item-with-submenu > a {
+            margin: 2px 8px;
+            border-radius: 8px;
+            padding: 0.625rem 1rem;
+        }
+
+        .sidebar nav .submenu a {
+            margin: 1px 8px;
+            border-radius: 8px;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+        }
+
         /* Mobile topbar and button styling */
         #mobile-menu-btn {
             border: none;
@@ -516,14 +530,14 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             </div>
             
             <!-- Navigation Label -->
-            <div class="px-5 mb-3">
-                <p class="text-[11px] font-semibold uppercase tracking-widest text-white/50 text-left">Navigation</p>
+            <div class="mx-4 mb-3">
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-white/50 px-2 text-left">Navigation</p>
             </div>
             
             <nav aria-label="Hauptnavigation">
                 <!-- Dashboard (All) -->
                 <a href="<?php echo asset('pages/dashboard/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/dashboard/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/dashboard/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-home w-5 mr-3"></i>
                     <span>Dashboard</span>
                 </a>
@@ -531,7 +545,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Mitglieder (Board, Head, Member, Candidate) -->
                 <?php if (Auth::canAccessPage('members')): ?>
                 <a href="<?php echo asset('pages/members/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/members/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/members/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-users w-5 mr-3"></i>
                     <span>Mitglieder</span>
                 </a>
@@ -539,28 +553,28 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
 
                 <!-- Alumni (All) -->
                 <a href="<?php echo asset('pages/alumni/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/alumni/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/alumni/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-user-graduate w-5 mr-3"></i>
                     <span>Alumni</span>
                 </a>
 
                 <!-- Projekte (All) -->
                 <a href="<?php echo asset('pages/projects/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/projects/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/projects/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-project-diagram w-5 mr-3"></i>
                     <span>Projekte</span>
                 </a>
 
                 <!-- Events (All) -->
                 <a href="<?php echo asset('pages/events/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/events/') && !isActivePath('/events/helpers.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/events/') && !isActivePath('/events/helpers.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-calendar w-5 mr-3"></i>
                     <span>Events</span>
                 </a>
 
                 <!-- Helfersystem (All) -->
                 <a href="<?php echo asset('pages/events/helpers.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/events/helpers.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/events/helpers.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-hands-helping w-5 mr-3"></i>
                     <span>Helfersystem</span>
                 </a>
@@ -568,7 +582,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Inventar (All) - Parent with submenu -->
                 <div class="menu-item-with-submenu">
                     <a href="<?php echo asset('pages/inventory/index.php'); ?>" 
-                       class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/inventory/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                       class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/inventory/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                         <i class="fas fa-box w-5 mr-3"></i>
                         <span class="flex-1">Inventar</span>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 submenu-chevron"></i>
@@ -578,7 +592,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                     <div class="submenu">
                         <!-- Meine Ausleihen (All) - Indented -->
                         <a href="<?php echo asset('pages/inventory/my_rentals.php'); ?>" 
-                           class="flex items-center px-6 pr-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 submenu-item <?php echo isActivePath('/my_rentals.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                           class="flex items-center px-6 pr-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 submenu-item <?php echo isActivePath('/my_rentals.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                             <i class="fas fa-clipboard-list w-5 mr-3"></i>
                             <span>Meine Ausleihen</span>
                         </a>
@@ -593,7 +607,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
 
                 <!-- Blog (All) -->
                 <a href="<?php echo asset('pages/blog/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/blog/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/blog/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-newspaper w-5 mr-3"></i>
                     <span>Blog</span>
                 </a>
@@ -601,7 +615,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Rechnungen (Only board_finance) -->
                 <?php if (Auth::canManageInvoices()): ?>
                 <a href="<?php echo asset('pages/invoices/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/invoices/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/invoices/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-file-invoice-dollar w-5 mr-3"></i>
                     <span>Rechnungen</span>
                 </a>
@@ -610,7 +624,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Ideenbox (Members, Candidates, Head, Board) -->
                 <?php if (Auth::canAccessPage('ideas')): ?>
                 <a href="<?php echo asset('pages/ideas/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/ideas/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/ideas/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-lightbulb w-5 mr-3"></i>
                     <span>Ideenbox</span>
                 </a>
@@ -619,7 +633,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Umfragen (Polls - All authenticated users) -->
                 <?php if (Auth::canAccessPage('polls')): ?>
                 <a href="<?php echo asset('pages/polls/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/polls/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/polls/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-poll w-5 mr-3"></i>
                     <span>Umfragen</span>
                 </a>
@@ -628,7 +642,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Schulungsanfrage (Alumni, Alumni-Board) -->
                 <?php if (Auth::canAccessPage('training_requests')): ?>
                 <a href="<?php echo asset('pages/alumni/requests.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/alumni/requests.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/alumni/requests.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-chalkboard-teacher w-5 mr-3"></i>
                     <span>Schulungsanfrage</span>
                 </a>
@@ -637,7 +651,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Nützliche Links (Board + Alumni Board + Alumni Auditor) -->
                 <?php if (in_array($userRole, ['board_finance', 'board_internal', 'board_external', 'alumni_board', 'alumni_auditor'])): ?>
                 <a href="<?php echo asset('pages/links/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/links/') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/links/') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-link w-5 mr-3"></i>
                     <span>Nützliche Links</span>
                 </a>
@@ -654,7 +668,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Admin Dashboard -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/index.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/index.php') || (isActivePath('/admin/') && !isActivePath('/admin/users') && !isActivePath('/admin/stats') && !isActivePath('/admin/audit') && !isActivePath('/admin/db_maintenance') && !isActivePath('/admin/settings')) ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/index.php') || (isActivePath('/admin/') && !isActivePath('/admin/users') && !isActivePath('/admin/stats') && !isActivePath('/admin/audit') && !isActivePath('/admin/db_maintenance') && !isActivePath('/admin/settings')) ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                     <span>Dashboard</span>
                 </a>
@@ -663,7 +677,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Masseneinladungen (Admins only) -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/mass_invitations.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/mass_invitations.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/mass_invitations.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-mail-bulk w-5 mr-3"></i>
                     <span>Masseneinladungen</span>
                 </a>
@@ -672,7 +686,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Benutzerverwaltung (All board members who can manage users) -->
                 <?php if (Auth::canManageUsers()): ?>
                 <a href="<?php echo asset('pages/admin/users.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/users.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/users.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-users-cog w-5 mr-3"></i>
                     <span>Benutzerverwaltung</span>
                 </a>
@@ -681,7 +695,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Statistiken (All board members) -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/stats.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/stats.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/stats.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-chart-bar w-5 mr-3"></i>
                     <span>Statistiken</span>
                 </a>
@@ -690,7 +704,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Audit Logs (All board members) -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/audit.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/audit.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/audit.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-clipboard-list w-5 mr-3"></i>
                     <span>Audit Logs</span>
                 </a>
@@ -699,7 +713,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- System Health (All board members) -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/db_maintenance.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/db_maintenance.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/db_maintenance.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-database w-5 mr-3"></i>
                     <span>System Health</span>
                 </a>
@@ -708,7 +722,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Systemeinstellungen (Board roles + alumni_board + alumni_auditor) -->
                 <?php if (Auth::canAccessSystemSettings()): ?>
                 <a href="<?php echo asset('pages/admin/settings.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/settings.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/settings.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-cogs w-5 mr-3"></i>
                     <span>Systemeinstellungen</span>
                 </a>
@@ -717,7 +731,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <!-- Event-Statistiken (Admin roles only) -->
                 <?php if (Auth::isAdmin()): ?>
                 <a href="<?php echo asset('pages/admin/event_stats.php'); ?>" 
-                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/event_stats.php') ? 'bg-white/20 text-white border-r-4 border-ibc-green' : ''; ?>">
+                   class="flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/admin/event_stats.php') ? 'bg-white/20 text-white border-l-4 border-ibc-green' : ''; ?>">
                     <i class="fas fa-chart-bar w-5 mr-3"></i>
                     <span>Event-Statistiken</span>
                 </a>
@@ -846,13 +860,13 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             <div class='mb-3 space-y-2'>
                 <!-- Profilangaben -->
                 <a href='<?php echo asset('pages/auth/profile.php'); ?>' 
-                   class='flex items-center justify-center w-full px-4 py-2 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/profile.php') ? 'bg-white/10' : ''; ?>'>
+                   class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/profile.php') ? 'bg-white/10' : ''; ?>'>
                     <i class='fas fa-user text-xs mr-2'></i> 
                     <span>Mein Profil</span>
                 </a>
                 <!-- Einstellungen (sub-item under Mein Profil) -->
                 <a href='<?php echo asset('pages/auth/settings.php'); ?>' 
-                   class='flex items-center justify-center w-full px-4 py-2 text-xs font-medium text-white/80 dark:text-slate-300 border border-white/20 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/settings.php') ? 'bg-white/10' : ''; ?>'>
+                   class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/80 dark:text-slate-300 border border-white/20 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/settings.php') ? 'bg-white/10' : ''; ?>'>
                     <i class='fas fa-cog text-xs mr-2'></i> 
                     <span>Einstellungen</span>
                 </a>
@@ -860,13 +874,13 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             
             <!-- Logout Button -->
             <a href='<?php echo asset('pages/auth/logout.php'); ?>' 
-               class='flex items-center justify-center w-full px-4 py-2 mb-3 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm'>
+               class='flex items-center justify-start w-full px-4 py-2 mb-3 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm'>
                 <i class='fas fa-sign-out-alt text-xs mr-2 group-hover:translate-x-0.5 transition-transform'></i> 
                 <span>Abmelden</span>
             </a>
             
             <!-- Dark/Light Mode Toggle -->
-            <button id="theme-toggle" class='flex items-center justify-center w-full px-4 py-2 text-xs font-medium text-white/90 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm' aria-label="Zwischen hellem und dunklem Modus wechseln">
+            <button id="theme-toggle" class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/90 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm' aria-label="Zwischen hellem und dunklem Modus wechseln">
                 <i id="theme-icon" class='fas fa-moon text-xs mr-2'></i>
                 <span id="theme-text">Darkmode</span>
             </button>

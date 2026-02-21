@@ -4658,16 +4658,16 @@ img:not([loading]) {
 
 /* Directory card hover - lift animation */
 .directory-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .directory-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .dark-mode .directory-card:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
 /* Directory card name typography */
@@ -4691,11 +4691,12 @@ img:not([loading]) {
     color: #6b7280;
     background-color: #f3f4f6;
     border: 1px solid #e5e7eb;
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     text-decoration: none;
 }
 
-.directory-contact-icon:hover {
+.directory-contact-icon:hover,
+.directory-card:hover .directory-contact-icon {
     color: var(--ibc-blue);
     background-color: #eff6ff;
     border-color: #bfdbfe;

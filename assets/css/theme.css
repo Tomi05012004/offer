@@ -4654,3 +4654,26 @@ img:not([loading]) {
 .dark-mode .directory-card:hover {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+/* Mobile Optimization for Member Directory */
+@media (max-width: 767px) {
+    /* Cards take full width: remove column gutters so cards span edge-to-edge */
+    .row.row-cols-1 > .col {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Profile images: ensure centered above the name on mobile */
+    .directory-card .directory-avatar {
+        display: block;
+        margin: 0 auto;
+    }
+
+    /* Action buttons: large, easy-to-tap at the bottom of the card */
+    .directory-card .btn {
+        min-height: 3rem;
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+    }
+}

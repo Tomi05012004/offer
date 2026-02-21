@@ -227,6 +227,39 @@ function isAlumniRole($role) {
 }
 
 /**
+ * Extract initials from first and last name
+ *
+ * @param string $firstName
+ * @param string $lastName
+ * @return string Two-letter uppercase initials, or '?' if both are empty
+ */
+function getMemberInitials($firstName, $lastName) {
+    $first = !empty($firstName) ? strtoupper(substr($firstName, 0, 1)) : '';
+    $last  = !empty($lastName)  ? strtoupper(substr($lastName,  0, 1)) : '';
+    $initials = $first . $last;
+    return $initials !== '' ? $initials : '?';
+}
+
+/**
+ * Generate a consistent background color for an avatar based on a name
+ * Uses a hash of the name to select from a palette of accessible colors
+ *
+ * @param string $name Full name or any string
+ * @return string Hex color code (e.g. '#0066b3')
+ */
+function getAvatarColor($name) {
+    $colors = [
+        '#0066b3', '#4f46e5', '#0891b2', '#059669', '#d97706',
+        '#dc2626', '#7c3aed', '#065f46', '#92400e', '#1e3a5f',
+    ];
+    if (empty($name)) {
+        return $colors[0];
+    }
+    $index = abs(crc32($name)) % count($colors);
+    return $colors[$index];
+}
+
+/**
  * Extract display names from group objects
  * Groups can be either strings (legacy format) or objects with id and displayName
  * 

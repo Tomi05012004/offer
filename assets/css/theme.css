@@ -4643,16 +4643,47 @@ img:not([loading]) {
 
 /* Directory card hover - lift animation */
 .directory-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
 }
 
 .directory-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .dark-mode .directory-card:hover {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Directory card name typography */
+.directory-card-name {
+    font-weight: 600;
+}
+
+/* Role badge - rounded corners */
+.directory-role-badge {
+    border-radius: 20px;
+}
+
+/* Contact icons - subtle gray with IBC-blue on hover */
+.directory-contact-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #6b7280;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+}
+
+.directory-contact-icon:hover {
+    color: var(--ibc-blue);
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
 }
 
 /* Mobile Optimization for Member Directory */

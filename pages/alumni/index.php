@@ -163,7 +163,7 @@ ob_start();
                 <div class="card directory-card p-4 d-flex flex-column h-100 position-relative">
                     <!-- Role Badge: Top Right Corner -->
                     <div class="position-absolute top-0 end-0 mt-3 me-3">
-                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full border <?php echo $badgeClass; ?>">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold directory-role-badge border <?php echo $badgeClass; ?>">
                             <?php echo $displayRole; ?>
                         </span>
                     </div>
@@ -172,10 +172,12 @@ ob_start();
                     <div class="d-flex justify-content-center mb-3">
                         <?php 
                         // Generate initials for fallback
-                        $initials = strtoupper(substr($profile['first_name'], 0, 1) . substr($profile['last_name'], 0, 1));
+                        $initials = getMemberInitials($profile['first_name'], $profile['last_name']);
+                        $avatarColor = getAvatarColor($profile['first_name'] . ' ' . $profile['last_name']);
                         $imagePath = !empty($profile['image_path']) ? asset($profile['image_path']) : '';
                         ?>
-                        <div class="directory-avatar directory-avatar--purple rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden shadow">
+                        <div class="directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden shadow"
+                             style="background-color:<?php echo htmlspecialchars($avatarColor); ?>;">
                             <?php if (!empty($imagePath)): ?>
                                 <img 
                                     src="<?php echo $imagePath; ?>" 
@@ -193,7 +195,7 @@ ob_start();
                     </div>
                     
                     <!-- Name -->
-                    <h3 class="fs-6 fw-bold text-gray-800 text-center mb-2">
+                    <h3 class="fs-6 directory-card-name text-gray-800 text-center mb-2">
                         <?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?>
                     </h3>
                     
@@ -220,8 +222,7 @@ ob_start();
                                 href="<?php echo htmlspecialchars($profile['linkedin_url']); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm border-0"
-                                style="width:2.5rem;height:2.5rem;"
+                                class="directory-contact-icon"
                                 title="LinkedIn Profile"
                             >
                                 <i class="fab fa-linkedin-in"></i>
@@ -233,8 +234,7 @@ ob_start();
                                 href="<?php echo htmlspecialchars($profile['xing_url']); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm border-0"
-                                style="width:2.5rem;height:2.5rem;background-color:#006567;"
+                                class="directory-contact-icon"
                                 title="Xing Profile"
                             >
                                 <i class="fab fa-xing"></i>

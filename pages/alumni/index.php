@@ -204,14 +204,14 @@ ob_start();
                     
                     <!-- Position & Company -->
                     <div class="text-center mb-3 flex-grow-1">
-                        <p class="small text-secondary mb-1">
+                        <p class="small text-secondary mb-1 directory-card-text-truncate">
                             <?php echo htmlspecialchars($profile['position']); ?>
                         </p>
-                        <p class="small text-muted mb-0">
+                        <p class="small text-muted mb-0 directory-card-text-truncate">
                             <?php echo htmlspecialchars($profile['company']); ?>
                         </p>
                         <?php if (!empty($profile['industry'])): ?>
-                            <p class="text-muted mt-1 mb-0" style="font-size:0.75rem;">
+                            <p class="text-muted mt-1 mb-0 directory-card-text-truncate" style="font-size:0.75rem;">
                                 <i class="fas fa-briefcase me-1"></i>
                                 <?php echo htmlspecialchars($profile['industry']); ?>
                             </p>

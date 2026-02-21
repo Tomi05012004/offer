@@ -2896,7 +2896,7 @@ body.dark-mode .sidebar {
     
     /* Main Content Area - Better mobile spacing */
     main {
-        padding: 1rem !important;
+        padding: 1rem 1.5rem !important;
         padding-top: 5rem !important; /* Space for mobile header */
     }
     
@@ -3925,17 +3925,11 @@ body:not(.dark-mode) .hero-gradient .hero-date {
 @media (max-width: 768px) {
     table {
         display: block;
+        width: 100%;
+        max-width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         white-space: nowrap;
-    }
-    
-    table thead {
-        display: table-header-group;
-    }
-    
-    table tbody {
-        display: table-row-group;
     }
 }
 
@@ -4089,6 +4083,11 @@ body.dark-mode {
     }
     .sidebar-overlay.active {
         display: block;
+    }
+    /* Sidebar footer icons - ensure they stay centered and don't slide left */
+    .sidebar-footer a,
+    .sidebar-footer button {
+        justify-content: center;
     }
 }
 

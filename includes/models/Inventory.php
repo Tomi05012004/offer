@@ -139,17 +139,17 @@ class Inventory {
             }
         }
         
-        // SQL query with correct table and column names
-        // Note: Since quantity is reduced when items are checked out,
-        // available_quantity is simply the current quantity
+        // SQL query with correct table and column names.
+        // available_quantity = quantity - loaned_count (loaned_count tracks currently active loans)
         $sql = "SELECT i.id, i.easyverein_id, i.name, i.description, i.serial_number, 
                        i.category_id, i.location_id, i.quantity, i.min_stock, i.unit, 
                        i.unit_price, i.image_path, i.notes, i.created_at, i.updated_at, i.last_synced_at,
                        i.is_archived_in_easyverein,
+                       COALESCE(i.loaned_count, 0) as loaned_count,
                        c.name as category_name, 
                        c.color as category_color,
                        l.name as location_name,
-                       (i.quantity - COALESCE(i.quantity_borrowed, 0) - COALESCE(i.quantity_rented, 0)) as available_quantity
+                       (i.quantity - COALESCE(i.loaned_count, 0)) as available_quantity
                 FROM inventory_items i
                 LEFT JOIN categories c ON i.category_id = c.id
                 LEFT JOIN locations l ON i.location_id = l.id" 

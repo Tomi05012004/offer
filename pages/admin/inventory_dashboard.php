@@ -36,26 +36,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_return'])) {
     }
 }
 
+// Read filter param (whitelist)
+$allowedFilters = ['all', 'pending_return', 'active'];
+$filter = in_array($_GET['filter'] ?? '', $allowedFilters) ? $_GET['filter'] : 'all';
+
 // Handle CSV export
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $db = Database::getContentDB();
+
+    // Map filter to a safe, hardcoded SQL condition (no user input enters the query)
+    $statusConditionMap = [
+        'pending_return' => "r.status = 'pending_confirmation'",
+        'active'         => "r.status = 'active'",
+        'all'            => "r.status IN ('active', 'pending_confirmation')",
+    ];
+    $statusCondition = $statusConditionMap[$filter] ?? $statusConditionMap['all'];
+
     $stmt = $db->query("
         SELECT 
-            r.id,
             r.amount,
-            r.purpose,
-            r.destination,
             r.checkout_date,
             r.expected_return,
             r.created_at,
             i.name AS item_name,
-            i.unit,
             r.user_id,
             r.status
         FROM rentals r
         JOIN inventory_items i ON r.item_id = i.id
         WHERE r.actual_return IS NULL
-        AND r.status IN ('active', 'pending_confirmation')
+        AND $statusCondition
         ORDER BY r.created_at DESC
     ");
     $rentals = $stmt->fetchAll();
@@ -73,6 +82,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         }
     }
 
+    $statusLabels = [
+        'active'               => 'Aktiv',
+        'pending_confirmation' => 'Rückgabe ausstehend',
+    ];
+
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="ausleihen_' . date('Y-m-d') . '.csv"');
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -80,18 +94,16 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $out = fopen('php://output', 'w');
     // UTF-8 BOM for Excel compatibility
     fputs($out, "\xEF\xBB\xBF");
-    fputcsv($out, ['ID', 'Benutzer', 'Artikel', 'Menge', 'Einheit', 'Verwendungszweck', 'Zielort', 'Ausgeliehen am', 'Rückgabe bis'], ';');
+    fputcsv($out, ['Datum', 'Benutzer (E-Mail)', 'Gegenstand', 'Menge', 'Status', 'Erwartete Rückgabe'], ';');
 
     foreach ($rentals as $r) {
+        $checkoutOrCreatedDate = $r['checkout_date'] ?: $r['created_at'];
         fputcsv($out, [
-            $r['id'],
+            $checkoutOrCreatedDate ? date('d.m.Y', strtotime($checkoutOrCreatedDate)) : '',
             $userEmails[$r['user_id']] ?? 'Unbekannt',
             $r['item_name'],
             $r['amount'],
-            $r['unit'],
-            $r['purpose'] ?? '',
-            $r['destination'] ?? '',
-            $r['checkout_date'] ? date('d.m.Y H:i', strtotime($r['checkout_date'])) : date('d.m.Y H:i', strtotime($r['created_at'])),
+            $statusLabels[$r['status']] ?? $r['status'],
             $r['expected_return'] ? date('d.m.Y', strtotime($r['expected_return'])) : '',
         ], ';');
     }
@@ -99,10 +111,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     fclose($out);
     exit;
 }
-
-// Read filter param (whitelist)
-$allowedFilters = ['all', 'pending_return', 'active'];
-$filter = in_array($_GET['filter'] ?? '', $allowedFilters) ? $_GET['filter'] : 'all';
 
 // Fetch all active rentals
 $checkedOutStats = Inventory::getCheckedOutStats();
@@ -165,7 +173,7 @@ ob_start();
             <p class="text-gray-600">Übersicht aller aktiven Ausleihen</p>
         </div>
         <div class="mt-4 md:mt-0 flex gap-3">
-            <a href="?export=csv" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+            <a href="?export=csv&filter=<?php echo urlencode($filter); ?>" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
                 <i class="fas fa-file-csv mr-2"></i>
                 CSV Export
             </a>

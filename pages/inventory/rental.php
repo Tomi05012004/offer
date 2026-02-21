@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../src/Auth.php';
 require_once __DIR__ . '/../../includes/models/Inventory.php';
 require_once __DIR__ . '/../../includes/database.php';
+require_once __DIR__ . '/../../src/MailService.php';
 
 if (!Auth::check()) {
     header('Location: ../auth/login.php');
@@ -84,6 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rental'])) {
         );
         
         $db->commit();
+        
+        // Send notification email to board
+        $borrowerEmail = $_SESSION['user_email'] ?? 'Unbekannt';
+        $safeSubject = str_replace(["\r", "\n"], '', $item['name']);
+        $emailBody = MailService::getTemplate(
+            'Neue Ausleihe im Inventar',
+            '<p class="email-text">Ein Mitglied hat einen Artikel aus dem Inventar ausgeliehen.</p>
+            <table class="info-table">
+                <tr><td>Artikel</td><td>' . htmlspecialchars($item['name']) . '</td></tr>
+                <tr><td>Menge</td><td>' . htmlspecialchars($amount . ' ' . ($item['unit'] ?? 'Stück')) . '</td></tr>
+                <tr><td>Ausgeliehen von</td><td>' . htmlspecialchars($borrowerEmail) . '</td></tr>
+                <tr><td>Verwendungszweck</td><td>' . htmlspecialchars($purpose) . '</td></tr>
+                <tr><td>Rückgabe bis</td><td>' . htmlspecialchars(date('d.m.Y', strtotime($expectedReturn))) . '</td></tr>
+                <tr><td>Datum</td><td>' . date('d.m.Y H:i') . '</td></tr>
+            </table>'
+        );
+        MailService::sendEmail(INVENTORY_BOARD_EMAIL, 'Neue Ausleihe: ' . $safeSubject, $emailBody);
         
         $_SESSION['rental_success'] = 'Artikel erfolgreich ausgeliehen! Bitte geben Sie ihn bis zum ' . date('d.m.Y', strtotime($expectedReturn)) . ' zurück.';
         header('Location: view.php?id=' . $itemId);

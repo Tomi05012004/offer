@@ -195,51 +195,15 @@ class Inventory {
     /**
      * Update item
      * 
-     * Protects EasyVerein-synced items from direct Master Data modifications
-     * Master Data fields are defined in self::MASTER_DATA_FIELDS constant
-     * Local Operational fields: location_id, notes, category_id, etc.
-     * 
-     * When updating items with easyverein_id, triggers bidirectional sync to EasyVerein API.
-     * If API sync fails, local update still proceeds but a warning is logged.
+     * Updates item fields locally in the database.
      * 
      * @param int $id Item ID
      * @param array $data Fields to update
      * @param int $userId User ID performing the update
-     * @param bool $isSyncUpdate Set to true when called from EasyVereinSync (default: false)
-     * @throws Exception If attempting to modify Master Data on EasyVerein-synced items
      * @return bool Success status
      */
-    public static function update($id, $data, $userId, $isSyncUpdate = false) {
+    public static function update($id, $data, $userId) {
         $db = Database::getContentDB();
-        
-        // Get item info including easyverein_id
-        $stmt = $db->prepare("SELECT easyverein_id FROM inventory_items WHERE id = ?");
-        $stmt->execute([$id]);
-        $item = $stmt->fetch();
-        
-        // Check if this item is synced with EasyVerein (unless this IS a sync update)
-        if (!$isSyncUpdate && $item && !empty($item['easyverein_id'])) {
-            // This item is synced with EasyVerein
-            // Check if trying to modify Master Data fields
-            $attemptedMasterDataChanges = array_intersect(array_keys($data), self::MASTER_DATA_FIELDS);
-            
-            if (!empty($attemptedMasterDataChanges)) {
-                // Trigger bidirectional sync to EasyVerein
-                require_once __DIR__ . '/../services/EasyVereinSync.php';
-                
-                // Extract only the Master Data fields for sync
-                $syncData = array_intersect_key($data, array_flip(self::MASTER_DATA_FIELDS));
-                
-                $syncResult = EasyVereinSync::updateItem($item['easyverein_id'], $syncData);
-                
-                if (!$syncResult['success']) {
-                    // Log warning but allow local update to proceed
-                    error_log('Warning: Failed to sync update to EasyVerein (Item ID: ' . $id . ', EV ID: ' . $item['easyverein_id'] . '): ' . $syncResult['error']);
-                    // Optionally, you could throw an exception here to block the update
-                    // throw new Exception("Failed to sync with EasyVerein: " . $syncResult['error']);
-                }
-            }
-        }
         
         $fields = [];
         $values = [];

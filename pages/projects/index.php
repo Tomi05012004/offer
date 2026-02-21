@@ -245,7 +245,7 @@ ob_start();
                         <?php if (!empty($project['start_date'])): ?>
                             <div class="flex items-center group">
                                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mr-3">
-                                    <i class="fas fa-calendar-start text-blue-600 text-sm"></i>
+                                    <i class="fas fa-calendar-alt text-blue-600 text-sm"></i>
                                 </div>
                                 <span class="group-hover:text-blue-600 transition-colors">Start: <?php echo date('d.m.Y', strtotime($project['start_date'])); ?></span>
                             </div>

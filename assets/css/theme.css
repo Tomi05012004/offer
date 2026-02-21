@@ -2117,7 +2117,7 @@ a.btn-secondary {
 
 /* Premium Button System */
 .btn-primary {
-    background: linear-gradient(135deg, var(--ibc-green) 0%, var(--ibc-green-mid) 50%, var(--ibc-blue) 100%);
+    background: linear-gradient(135deg, var(--ibc-blue-light) 0%, var(--ibc-blue) 50%, var(--ibc-blue-dark) 100%);
     background-size: 200% 200%;
     animation: gradientShift 6s ease infinite;
     color: #ffffff !important;
@@ -2125,7 +2125,7 @@ a.btn-secondary {
     border-radius: var(--radius-md);
     font-weight: 600;
     letter-spacing: 0.02em;
-    box-shadow: 0 4px 15px rgba(0, 166, 81, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 102, 179, 0.35);
     transition: all var(--transition-normal);
     border: none;
     cursor: pointer;
@@ -2156,7 +2156,7 @@ body:not(.dark-mode) .btn-primary:active::after {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 166, 81, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 102, 179, 0.45);
     background-size: 200% 200%;
     filter: brightness(1.05);
 }
@@ -3525,13 +3525,13 @@ body.dark-mode [class*="from-green-"]:not(.from-green-50) {
 
 /* Dark Mode: Better Button Styles */
 body.dark-mode .btn-primary {
-    background: linear-gradient(135deg, var(--ibc-green-dark) 0%, var(--ibc-green) 50%, var(--ibc-blue-dark) 100%);
-    box-shadow: 0 4px 20px rgba(0, 166, 81, 0.4), 0 2px 8px rgba(0, 166, 81, 0.3);
+    background: linear-gradient(135deg, var(--ibc-blue) 0%, var(--ibc-blue-dark) 50%, var(--ibc-blue-darker) 100%);
+    box-shadow: 0 4px 20px rgba(0, 102, 179, 0.45), 0 2px 8px rgba(0, 102, 179, 0.3);
     color: #ffffff !important;
 }
 
 body.dark-mode .btn-primary:hover {
-    box-shadow: 0 8px 32px rgba(0, 166, 81, 0.5), 0 4px 16px rgba(0, 166, 81, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 102, 179, 0.55), 0 4px 16px rgba(0, 102, 179, 0.4);
     transform: translateY(-2px);
 }
 
@@ -4741,4 +4741,44 @@ img:not([loading]) {
         padding: 0.75rem 1rem;
         border-radius: 0.5rem;
     }
+}
+
+/* Browser Date/Time Picker Styling */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus {
+    outline: none;
+    border-color: var(--ibc-blue);
+    box-shadow: 0 0 0 3px rgba(0, 102, 179, 0.2);
+}
+
+body.dark-mode input[type="date"],
+body.dark-mode input[type="datetime-local"],
+body.dark-mode input[type="time"] {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+body.dark-mode input[type="date"]:focus,
+body.dark-mode input[type="datetime-local"]:focus,
+body.dark-mode input[type="time"]:focus {
+    border-color: var(--ibc-blue-light);
+    box-shadow: 0 0 0 3px rgba(51, 133, 196, 0.25);
 }

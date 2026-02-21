@@ -103,8 +103,8 @@ ob_start();
             <tbody class="divide-y divide-gray-200">
                 <?php foreach ($activeRentals as $rental): ?>
                 <?php
-                $isOverdue = strtotime($rental['expected_return']) < time();
-                $daysRemaining = ceil((strtotime($rental['expected_return']) - time()) / (60 * 60 * 24));
+                $isOverdue = isset($rental['expected_return']) && strtotime($rental['expected_return']) < time();
+                $daysRemaining = isset($rental['expected_return']) ? ceil((strtotime($rental['expected_return']) - time()) / (60 * 60 * 24)) : 0;
                 ?>
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3">

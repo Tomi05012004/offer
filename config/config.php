@@ -99,7 +99,7 @@ define('CLIENT_SECRET', AZURE_CLIENT_SECRET);
 define('REDIRECT_URI', AZURE_REDIRECT_URI);
 
 // Invoice Settings
-define('INVOICE_NOTIFICATION_EMAIL', _env('INVOICE_NOTIFICATION_EMAIL', 'finanzen@business-consulting.de'));
+define('INVOICE_NOTIFICATION_EMAIL', _env('INVOICE_NOTIFICATION_EMAIL', 'vorstand@business-consulting.de'));
 
 // Inventory Settings
 define('INVENTORY_BOARD_EMAIL', _env('INVENTORY_BOARD_EMAIL', 'vorstand-intern@business-consulting.de'));

@@ -34,6 +34,10 @@
     --ibc-blue-darker: #003d6b;
     --ibc-blue-hover: #005a9e;
     
+    /* Sidebar Backgrounds */
+    --sidebar-bg-light: #00457D;
+    --sidebar-bg-dark: #121212;
+    
     --ibc-accent: #ff6b35;
     --ibc-accent-light: #ff8b5d;
     --ibc-accent-dark: #e55220;
@@ -185,9 +189,9 @@ body {
     border-color: #334155 !important;
 }
 
-/* Sidebar - Permanent Corporate Blue (IBC-Blau) for Light and Dark Mode */
+/* Sidebar - Permanent IBC Corporate Blue for Light Mode */
 .sidebar {
-    background: linear-gradient(180deg, var(--ibc-blue-dark) 0%, var(--ibc-blue) 40%, var(--ibc-blue-darker) 100%) !important;
+    background: var(--sidebar-bg-light) !important;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
@@ -236,14 +240,14 @@ body:not(.dark-mode) .sidebar a:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Sidebar Active State - White Background with IBC Green Left Indicator */
+/* Sidebar Active State - Transparent overlay with blue left indicator */
 .sidebar a.active,
 .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
     border-right: none !important;
-    border-left: none !important;
-    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 31, 56, 0.3) !important;
+    border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
+    color: #ffffff !important;
 }
 
 /* Sidebar Scrollbar - Slim and Rounded (sidebar is always Corporate Blue) */
@@ -277,9 +281,9 @@ body:not(.dark-mode) .sidebar a:hover {
 
 /* Dark Mode: Enhanced Sidebar Styling */
 body.dark-mode .sidebar {
-    background-color: var(--ibc-blue) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    background-color: var(--sidebar-bg-dark) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
 }
@@ -291,11 +295,11 @@ body.dark-mode .sidebar a:hover {
 
 body.dark-mode .sidebar a.active,
 body.dark-mode .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.25) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
     border-right: none !important;
-    border-left: none !important;
-    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 31, 56, 0.35) !important;
+    border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
+    color: #ffffff !important;
 }
 
 /* Dark Mode: Sidebar Scrollbar - Slim and Rounded */
@@ -2005,10 +2009,11 @@ body:not(.dark-mode) .card:hover::after {
 
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     border-right: none !important;
-    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 79, 140, 0.25);
+    border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 10px !important;
+    color: #ffffff !important;
 }
 
 .sidebar nav a i {
@@ -2708,9 +2713,9 @@ body.dark-mode .card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 20px 40px rgba(0,0,0,0.3);
 }
 
-/* Dark Mode Sidebar Gradient */
+/* Dark Mode Sidebar - Dark gray with subtle contrast */
 body.dark-mode .sidebar {
-    background: linear-gradient(180deg, #003050 0%, #004070 40%, #002545 100%) !important;
+    background: var(--sidebar-bg-dark) !important;
 }
 
 /* Improved Transitions for Theme Switch */
@@ -3963,7 +3968,7 @@ body:not(.dark-mode) .hero-gradient .hero-date {
 
 /* --- SIDEBAR FIXES (Immer dunkel, Schrift immer weiß) --- */
 .sidebar {
-    background-color: var(--ibc-blue) !important; /* Dein Dunkelblau - defined at line 30 */
+    background-color: var(--sidebar-bg-light) !important;
     color: #ffffff !important;
 }
 .sidebar a, .sidebar i, .sidebar span {
@@ -3973,8 +3978,8 @@ body:not(.dark-mode) .hero-gradient .hero-date {
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 .sidebar .active-link { /* Falls du eine Klasse für aktive Links hast */
-    border-right: 4px solid var(--ibc-green);
-    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--ibc-blue-light);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* --- LIGHT/DARK MODE GLOBALS --- */
@@ -4339,15 +4344,9 @@ body {
    ENHANCED SIDEBAR DESIGN  
    ============================================================ */
 
-/* Refined sidebar with subtle texture */
+/* Refined sidebar with IBC Corporate Blue (#00457D) */
 .sidebar {
-    background: linear-gradient(180deg,
-        #004a87 0%,
-        #0055a0 15%,
-        #0066b3 40%,
-        #0055a0 75%,
-        #003d6b 100%
-    ) !important;
+    background: var(--sidebar-bg-light) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
 }
@@ -4359,12 +4358,13 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* Refined active nav item */
+/* Refined active nav item - transparent overlay with blue left indicator */
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.12) 100%) !important;
-    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 12px rgba(0, 31, 56, 0.3) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 10px !important;
+    color: #ffffff !important;
 }
 
 /* Sidebar section label */

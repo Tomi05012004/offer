@@ -72,9 +72,9 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        /* Sidebar - Permanent Corporate Blue (IBC-Blau) for both light and dark modes */
+        /* Sidebar - Permanent IBC Corporate Blue (#00457D) for both light and dark modes */
         .sidebar {
-            background: var(--ibc-blue) !important; /* Solid IBC Corporate Blue */
+            background: var(--sidebar-bg-light) !important; /* IBC Corporate Blue */
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
@@ -110,10 +110,10 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
         }
         
-        /* Sidebar styling for dark mode - adds border and maintains Corporate Blue */
+        /* Sidebar styling for dark mode - dark gray with subtle contrast */
         body.dark-mode .sidebar {
-            /* Corporate Blue maintained in both light and dark modes */
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--sidebar-bg-dark) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         /* Dark mode sidebar scrollbar */

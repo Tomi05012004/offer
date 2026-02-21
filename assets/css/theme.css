@@ -226,6 +226,7 @@ body:not(.dark-mode) .sidebar .text-gray-400 {
 .sidebar a:hover {
     color: #ffffff !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
     transition: all 0.2s ease;
 }
 
@@ -235,12 +236,14 @@ body:not(.dark-mode) .sidebar a:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Sidebar Active State - White Background with IBC Green Border */
+/* Sidebar Active State - White Background with IBC Green Left Indicator */
 .sidebar a.active,
 .sidebar a[class*="bg-white/20"] {
     background-color: rgba(255, 255, 255, 0.22) !important;
     border-right: none !important;
+    border-left: none !important;
     box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 31, 56, 0.3) !important;
+    border-radius: 8px !important;
 }
 
 /* Sidebar Scrollbar - Slim and Rounded (sidebar is always Corporate Blue) */
@@ -283,12 +286,16 @@ body.dark-mode .sidebar {
 
 body.dark-mode .sidebar a:hover {
     background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px !important;
 }
 
 body.dark-mode .sidebar a.active,
 body.dark-mode .sidebar a[class*="bg-white/20"] {
     background-color: rgba(255, 255, 255, 0.25) !important;
-    border-right: 4px solid var(--ibc-green) !important;
+    border-right: none !important;
+    border-left: none !important;
+    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 8px rgba(0, 31, 56, 0.35) !important;
+    border-radius: 8px !important;
 }
 
 /* Dark Mode: Sidebar Scrollbar - Slim and Rounded */

@@ -2,6 +2,9 @@
 /**
  * Admin Inventory Dashboard
  * Shows all active rentals and provides CSV export
+ *
+ * SQL – loaned_count column (run once as admin):
+ * ALTER TABLE inventory_items ADD COLUMN loaned_count INT NOT NULL DEFAULT 0;
  */
 
 require_once __DIR__ . '/../../src/Auth.php';
@@ -97,6 +100,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     exit;
 }
 
+// Read filter param (whitelist)
+$allowedFilters = ['all', 'pending_return', 'active'];
+$filter = in_array($_GET['filter'] ?? '', $allowedFilters) ? $_GET['filter'] : 'all';
+
 // Fetch all active rentals
 $checkedOutStats = Inventory::getCheckedOutStats();
 $activeRentals = array_filter($checkedOutStats['checkouts'], function($r) {
@@ -124,6 +131,9 @@ $pendingStmt = $db->query("
     ORDER BY r.created_at DESC
 ");
 $pendingRentalsRaw = $pendingStmt->fetchAll();
+
+// Fetch inventory items for Bestandsliste
+$inventoryItems = Inventory::getAll();
 
 if (!empty($pendingRentalsRaw)) {
     $userDb = Database::getUserDB();
@@ -179,6 +189,26 @@ ob_start();
 </div>
 <?php endif; ?>
 
+<!-- Filter Bar -->
+<div class="card p-4 mb-6">
+    <form method="GET" action="" class="flex flex-wrap items-center gap-3">
+        <label for="filter" class="text-sm font-medium text-gray-700">
+            <i class="fas fa-filter text-purple-600 mr-1"></i>Filter:
+        </label>
+        <select id="filter" name="filter" onchange="this.form.submit()"
+                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="all"<?php echo $filter === 'all' ? ' selected' : ''; ?>>Alle anzeigen</option>
+            <option value="pending_return"<?php echo $filter === 'pending_return' ? ' selected' : ''; ?>>Nur ausstehende Rückgaben</option>
+            <option value="active"<?php echo $filter === 'active' ? ' selected' : ''; ?>>Aktiv verliehen</option>
+        </select>
+        <?php if ($filter !== 'all'): ?>
+            <a href="?" class="text-sm text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times mr-1"></i>Filter zurücksetzen
+            </a>
+        <?php endif; ?>
+    </form>
+</div>
+
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <div class="card p-6">
@@ -232,7 +262,7 @@ ob_start();
 </div>
 
 <!-- Pending Return Confirmations Table -->
-<?php if (!empty($pendingRentals)): ?>
+<?php if ($filter !== 'active' && !empty($pendingRentals)): ?>
 <div class="card p-6 mb-8 border-2 border-yellow-300">
     <h2 class="text-xl font-bold text-gray-800 mb-4">
         <i class="fas fa-clock text-yellow-600 mr-2"></i>
@@ -293,6 +323,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- Active Rentals Table -->
+<?php if ($filter !== 'pending_return'): ?>
 <div class="card p-6">
     <h2 class="text-xl font-bold text-gray-800 mb-4">
         <i class="fas fa-clipboard-list text-blue-600 mr-2"></i>
@@ -356,6 +387,65 @@ ob_start();
                         <?php else: ?>
                             <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">Aktiv</span>
                         <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<!-- Bestandsliste -->
+<div class="card p-6 mt-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-warehouse text-green-600 mr-2"></i>
+        Bestandsliste
+    </h2>
+    <?php if (empty($inventoryItems)): ?>
+    <div class="text-center py-12">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">Keine Artikel im Inventar vorhanden</p>
+    </div>
+    <?php else: ?>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Artikel</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategorie</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gesamtbestand</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verliehen</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verfügbar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <?php foreach ($inventoryItems as $item): ?>
+                <?php $available = (int)$item['available_quantity']; ?>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm">
+                        <a href="../inventory/view.php?id=<?php echo $item['id']; ?>" class="font-semibold text-purple-600 hover:text-purple-800">
+                            <?php echo htmlspecialchars($item['name']); ?>
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <?php if (!empty($item['category_name'])): ?>
+                            <span class="px-2 py-1 text-xs rounded-full" style="background-color:<?php echo htmlspecialchars($item['category_color'] ?? '#e5e7eb'); ?>20;color:<?php echo htmlspecialchars($item['category_color'] ?? '#374151'); ?>">
+                                <?php echo htmlspecialchars($item['category_name']); ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="text-gray-400">-</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-800 font-semibold">
+                        <?php echo $item['quantity']; ?> <?php echo htmlspecialchars($item['unit']); ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <?php echo $item['loaned_count'] ?? 0; ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm font-semibold <?php echo $available <= 0 ? 'text-red-600' : ($available <= ($item['min_stock'] ?? 0) ? 'text-yellow-600' : 'text-green-700'); ?>">
+                        <?php echo $available; ?> <?php echo htmlspecialchars($item['unit']); ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

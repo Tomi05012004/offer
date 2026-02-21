@@ -21,12 +21,23 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0066b3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title><?php echo $title ?? 'IBC Intranet'; ?></title>
     <link rel="icon" type="image/webp" href="<?php echo asset('assets/img/cropped_maskottchen_32x32.webp'); ?>">
+    <!-- DNS prefetch for performance -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="//cdn-uicons.flaticon.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet">
+    <link rel="preload" href="<?php echo asset('assets/css/theme.css'); ?>" as="style">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="<?php echo asset('assets/css/theme.css'); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -518,7 +529,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     </nav>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 md:w-72 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col">
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 md:w-72 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 text-white shadow-2xl flex flex-col" style="height: 100vh; height: 100dvh; height: -webkit-fill-available;">
         <?php 
         $currentUser = Auth::user();
         $userRole = $currentUser['role'] ?? '';
@@ -526,7 +537,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         <div class="p-5 flex-1 overflow-y-auto sidebar-scroll">
             <!-- IBC Logo in Navbar -->
             <div class="mb-6 px-3 pt-2">
-                <img src="<?php echo asset('assets/img/ibc_logo_original_navbar.webp'); ?>" alt="IBC Logo" class="w-full h-auto drop-shadow-lg">
+                <img src="<?php echo asset('assets/img/ibc_logo_original_navbar.webp'); ?>" alt="IBC Logo" class="w-full h-auto drop-shadow-lg" decoding="async">
             </div>
             
             <nav aria-label="Hauptnavigation">
@@ -884,7 +895,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
     </aside>
 
     <!-- Main Content -->
-    <main id="main-content" role="main" class="md:ml-64 lg:ml-72 min-h-screen p-4 pt-20 md:pt-4 md:p-6 lg:p-10">
+    <main id="main-content" role="main" class="md:ml-64 lg:ml-72 min-h-screen p-4 pt-20 md:pt-6 md:p-6 lg:p-10" style="padding-bottom: max(1rem, env(safe-area-inset-bottom, 0))">
         <?php if (isset($_SESSION['show_2fa_nudge']) && $_SESSION['show_2fa_nudge']): ?>
         <!-- 2FA Nudge Modal -->
         <div id="tfa-nudge-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1146,8 +1157,40 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         // Update immediately and then every second
         updateLiveClock();
         setInterval(updateLiveClock, 1000);
+
+        // Lazy image fade-in
+        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+            if (img.complete) {
+                img.classList.add('loaded');
+            } else {
+                img.addEventListener('load', () => img.classList.add('loaded'));
+            }
+        });
+
+        // Table overflow indicator for responsive tables
+        document.querySelectorAll('.table-scroll-wrapper').forEach(wrapper => {
+            const checkOverflow = () => {
+                if (wrapper.scrollWidth > wrapper.clientWidth) {
+                    wrapper.classList.add('has-overflow');
+                } else {
+                    wrapper.classList.remove('has-overflow');
+                }
+            };
+            checkOverflow();
+            window.addEventListener('resize', checkOverflow);
+        });
+
+        // iOS viewport height fix
+        function setAppHeight() {
+            document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        }
+        setAppHeight();
+        window.addEventListener('resize', setAppHeight);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setAppHeight, 200);
+        });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmLWYePkbKfTkJXaJ4pYoEnJaSRh" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmLWYePkbKfTkJXaJ4pYoEnJaSRh" crossorigin="anonymous" defer></script>
 </body>
 </html>
 <!-- ✅ Sidebar visibility: Invoices restricted to board_finance only via canManageInvoices() -->

@@ -5,12 +5,21 @@ require_once __DIR__ . '/../helpers.php';
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0f1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title><?php echo $title ?? 'IBC Intranet'; ?></title>
     <link rel="icon" type="image/webp" href="<?php echo asset('assets/img/cropped_maskottchen_32x32.webp'); ?>">
+    <!-- DNS prefetch for performance -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="<?php echo asset('assets/css/theme.css'); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -51,14 +60,19 @@ require_once __DIR__ . '/../helpers.php';
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
             background: #0a0f1e;
             min-height: 100vh;
+            min-height: 100dvh;
+            min-height: var(--app-height, 100vh);
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* ULTRA ANIMATED BACKGROUND */
@@ -368,20 +382,22 @@ require_once __DIR__ . '/../helpers.php';
         /* LOGIN CONTAINER */
         .login-container {
             background: rgba(15, 20, 35, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 60px;
-            border-radius: 30px;
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            backdrop-filter: blur(20px) saturate(180%);
+            padding: clamp(2rem, 6vw, 3.75rem);
+            border-radius: clamp(16px, 4vw, 30px);
             box-shadow: 
                 0 30px 90px rgba(0, 0, 0, 0.5),
                 0 0 0 1px rgba(108, 183, 62, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            width: min(500px, 90%);
+            width: min(500px, 92vw);
+            max-width: 500px;
             position: relative;
             z-index: 10;
             -webkit-animation: containerAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             animation: containerAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             border: 1px solid rgba(108, 183, 62, 0.1);
+            margin: auto;
         }
 
         @-webkit-keyframes containerAppear {
@@ -1604,6 +1620,19 @@ require_once __DIR__ . '/../helpers.php';
 
     <!-- Content area -->
     <?php echo $content ?? ''; ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmLWYePkbKfTkJXaJ4pYoEnJaSRh" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmLWYePkbKfTkJXaJ4pYoEnJaSRh" crossorigin="anonymous" defer></script>
+    <script>
+        // iOS viewport height fix
+        (function() {
+            function setAppHeight() {
+                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+            }
+            setAppHeight();
+            window.addEventListener('resize', setAppHeight);
+            window.addEventListener('orientationchange', function() {
+                setTimeout(setAppHeight, 200);
+            });
+        })();
+    </script>
 </body>
 </html>

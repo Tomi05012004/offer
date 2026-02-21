@@ -17,7 +17,20 @@ if (!Auth::check()) {
 
 $user = Auth::user();
 $userRole = $user['role'] ?? '';
-$userAzureRoles = isset($user['azure_roles']) ? json_decode($user['azure_roles'], true) : [];
+// Prefer entra_roles (human-readable Graph group names); fall back to azure_roles for legacy accounts
+$userAzureRoles = [];
+if (!empty($user['entra_roles'])) {
+    $decoded = json_decode($user['entra_roles'], true);
+    if (is_array($decoded)) {
+        $userAzureRoles = $decoded;
+    }
+}
+if (empty($userAzureRoles) && !empty($user['azure_roles'])) {
+    $decoded = json_decode($user['azure_roles'], true);
+    if (is_array($decoded)) {
+        $userAzureRoles = $decoded;
+    }
+}
 
 // Get database connection
 $db = Database::getContentDB();

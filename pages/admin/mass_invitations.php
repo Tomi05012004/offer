@@ -21,9 +21,10 @@ $error   = '';
 
 const MAIL_BATCH_SIZE = 200;
 
-// Role groups for quick-select
-const ALUMNI_ROLES    = ['alumni', 'alumni_auditor', 'honorary_member', 'alumni_board'];
-const MITGLIEDER_ROLES = ['board_internal', 'board_external', 'board_finance', 'member', 'candidate', 'head'];
+// Entra role names for quick-select groups
+// Alumni group: users whose Microsoft Entra roles include one of these
+const ALUMNI_ENTRA_ROLES = ['Alumni', 'Alumni-Finanzprüfer', 'Ehrenmitglied', 'Alumni Vorstand'];
+// Mitglieder group: all users NOT in the alumni group (complementary selection)
 
 /**
  * Apply placeholder substitution to a mail body for one recipient.
@@ -559,11 +560,23 @@ ob_start();
                     $uName = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
                     $uEmail = $u['email'] ?? '';
                     $uRole  = $u['role'] ?? '';
+                    // Prefer entra_roles (human-readable); fall back to azure_roles for legacy accounts
+                    $uEntraRoles = [];
+                    if (!empty($u['entra_roles'])) {
+                        $decoded = json_decode($u['entra_roles'], true);
+                        if (is_array($decoded)) $uEntraRoles = $decoded;
+                    }
+                    if (empty($uEntraRoles) && !empty($u['azure_roles'])) {
+                        $decoded = json_decode($u['azure_roles'], true);
+                        if (is_array($decoded)) $uEntraRoles = $decoded;
+                    }
+                    $uEntraRolesJson = htmlspecialchars(json_encode($uEntraRoles), ENT_QUOTES, 'UTF-8');
                 ?>
                 <label class="bulk-user-row flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                        data-email="<?php echo htmlspecialchars(strtolower($uEmail)); ?>"
                        data-name="<?php echo htmlspecialchars(strtolower($uName)); ?>"
-                       data-role="<?php echo htmlspecialchars($uRole); ?>">
+                       data-role="<?php echo htmlspecialchars($uRole); ?>"
+                       data-entra-roles="<?php echo $uEntraRolesJson; ?>">
                     <input type="checkbox" name="bulk_user_ids[]" value="<?php echo (int)$u['id']; ?>"
                            class="bulk-user-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500">
                     <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-xs flex-shrink-0">
@@ -636,8 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectGroupAlumniBtn     = document.getElementById('selectGroupAlumni');
     const selectGroupMitgliederBtn = document.getElementById('selectGroupMitglieder');
 
-    const ALUMNI_ROLES     = ['alumni', 'alumni_auditor', 'honorary_member', 'alumni_board'];
-    const MITGLIEDER_ROLES = ['board_internal', 'board_external', 'board_finance', 'member', 'candidate', 'head'];
+    const ALUMNI_ENTRA_ROLES = <?php echo json_encode(ALUMNI_ENTRA_ROLES); ?>;
 
     // Load template via AJAX
     if (templateSelect) {
@@ -695,12 +707,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selectedCount) selectedCount.textContent = checked + ' ausgewählt';
     }
 
-    // Select users by role group
-    function selectByRoleGroup(roles) {
+    // Select users by Entra role group.
+    // When isAlumni=true  → select users who have at least one Entra role from ALUMNI_ENTRA_ROLES.
+    // When isAlumni=false → select users who have NO alumni Entra roles (all other members).
+    function selectByEntraGroup(isAlumni) {
         document.querySelectorAll('.bulk-user-row').forEach(row => {
-            const role = row.getAttribute('data-role') || '';
-            const cb   = row.querySelector('.bulk-user-checkbox');
-            if (cb && roles.includes(role)) {
+            const raw = row.getAttribute('data-entra-roles') || '[]';
+            let entraRoles = [];
+            try { entraRoles = JSON.parse(raw); } catch (e) { entraRoles = []; }
+            const hasAlumniRole = entraRoles.some(r => ALUMNI_ENTRA_ROLES.includes(r));
+            const match = isAlumni ? hasAlumniRole : !hasAlumniRole;
+            const cb = row.querySelector('.bulk-user-checkbox');
+            if (cb && match) {
                 cb.checked = true;
             }
         });
@@ -708,10 +726,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (selectGroupAlumniBtn) {
-        selectGroupAlumniBtn.addEventListener('click', () => selectByRoleGroup(ALUMNI_ROLES));
+        selectGroupAlumniBtn.addEventListener('click', () => selectByEntraGroup(true));
     }
     if (selectGroupMitgliederBtn) {
-        selectGroupMitgliederBtn.addEventListener('click', () => selectByRoleGroup(MITGLIEDER_ROLES));
+        selectGroupMitgliederBtn.addEventListener('click', () => selectByEntraGroup(false));
     }
 
     // Select/deselect all visible users

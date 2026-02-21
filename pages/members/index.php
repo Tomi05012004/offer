@@ -233,8 +233,8 @@ ob_start();
                         $avatarColor = getAvatarColor($member['first_name'] . ' ' . $member['last_name']);
                         ?>
                         <?php if ($showPlaceholder): ?>
-                            <!-- Placeholder with initials - Colored background -->
-                            <div class="directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow"
+                            <!-- Placeholder with initials - Colored background (MS-Teams style) -->
+                            <div class="avatar-placeholder shadow"
                                  style="background-color:<?php echo htmlspecialchars($avatarColor); ?>;">
                                 <?php echo htmlspecialchars($initials); ?>
                             </div>

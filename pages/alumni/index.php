@@ -175,8 +175,11 @@ ob_start();
                         $initials = getMemberInitials($profile['first_name'], $profile['last_name']);
                         $avatarColor = getAvatarColor($profile['first_name'] . ' ' . $profile['last_name']);
                         $imagePath = !empty($profile['image_path']) ? asset($profile['image_path']) : '';
+                        $avatarClass = empty($imagePath)
+                            ? 'avatar-placeholder'
+                            : 'directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden';
                         ?>
-                        <div class="directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden shadow"
+                        <div class="<?php echo $avatarClass; ?> shadow"
                              style="background-color:<?php echo htmlspecialchars($avatarColor); ?>;">
                             <?php if (!empty($imagePath)): ?>
                                 <img 

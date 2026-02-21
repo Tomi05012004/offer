@@ -529,11 +529,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                 <img src="<?php echo asset('assets/img/ibc_logo_original_navbar.webp'); ?>" alt="IBC Logo" class="w-full h-auto drop-shadow-lg">
             </div>
             
-            <!-- Navigation Label -->
-            <div class="mx-4 mb-3">
-                <p class="text-[11px] font-semibold uppercase tracking-widest text-white/50 px-2 text-left">Navigation</p>
-            </div>
-            
             <nav aria-label="Hauptnavigation">
                 <!-- Dashboard (All) -->
                 <a href="<?php echo asset('pages/dashboard/index.php'); ?>" 
@@ -597,12 +592,6 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
                             <span>Meine Ausleihen</span>
                         </a>
                     </div>
-                </div>
-
-                <!-- Features Section Divider -->
-                <div class="my-3 mx-4">
-                    <div class="border-t border-white/10"></div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-white/40 mt-3 px-2 text-left">Features</p>
                 </div>
 
                 <!-- Blog (All) -->

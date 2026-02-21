@@ -74,14 +74,17 @@ ob_start();
                     <i class="fas fa-search mr-1 text-purple-600"></i>
                     Search by Name, Position, Company or Industry
                 </label>
-                <input 
-                    type="text" 
-                    id="search" 
-                    name="search" 
-                    value="<?php echo htmlspecialchars($searchKeyword); ?>"
-                    placeholder="Enter search term..."
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                >
+                <div class="directory-search-wrapper">
+                    <i class="fas fa-search directory-search-icon directory-search-icon--purple" aria-hidden="true"></i>
+                    <input 
+                        type="text" 
+                        id="search" 
+                        name="search" 
+                        value="<?php echo htmlspecialchars($searchKeyword); ?>"
+                        placeholder="Enter search term..."
+                        class="w-full py-3 border border-gray-300 transition-all"
+                    >
+                </div>
             </div>
             
             <!-- Industry Filter -->
@@ -143,7 +146,7 @@ ob_start();
             <p class="text-gray-500">Try adjusting your search filters</p>
         </div>
     <?php else: ?>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             <?php foreach ($profiles as $profile): ?>
                 <?php
                 // Determine role badge color
@@ -156,30 +159,31 @@ ob_start();
                 $badgeClass = $roleBadgeColors[$profile['role'] ?? ''] ?? 'bg-gray-100 text-gray-800 border-gray-300';
                 $displayRole = htmlspecialchars($profile['display_role'] ?? Auth::getRoleLabel($profile['role'] ?? ''));
                 ?>
-                <div class="card p-6 hover:shadow-xl transition-shadow relative">
+                <div class="col">
+                <div class="card directory-card p-4 d-flex flex-column h-100 position-relative">
                     <!-- Role Badge: Top Right Corner -->
-                    <div class="absolute top-4 right-4">
+                    <div class="position-absolute top-0 end-0 mt-3 me-3">
                         <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full border <?php echo $badgeClass; ?>">
                             <?php echo $displayRole; ?>
                         </span>
                     </div>
                     
                     <!-- Profile Image -->
-                    <div class="flex justify-center mb-4">
+                    <div class="d-flex justify-content-center mb-3">
                         <?php 
                         // Generate initials for fallback
                         $initials = strtoupper(substr($profile['first_name'], 0, 1) . substr($profile['last_name'], 0, 1));
                         $imagePath = !empty($profile['image_path']) ? asset($profile['image_path']) : '';
                         ?>
-                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-lg">
+                        <div class="directory-avatar directory-avatar--purple rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden shadow">
                             <?php if (!empty($imagePath)): ?>
                                 <img 
                                     src="<?php echo $imagePath; ?>" 
                                     alt="<?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?>"
-                                    class="w-full h-full object-cover"
+                                    class="w-100 h-100 object-fit-cover"
                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                                 >
-                                <div style="display:none;" class="w-full h-full flex items-center justify-center text-3xl">
+                                <div style="display:none;" class="w-100 h-100 d-flex align-items-center justify-content-center">
                                     <?php echo htmlspecialchars($initials); ?>
                                 </div>
                             <?php else: ?>
@@ -189,34 +193,35 @@ ob_start();
                     </div>
                     
                     <!-- Name -->
-                    <h3 class="text-lg font-bold text-gray-800 text-center mb-2">
+                    <h3 class="fs-6 fw-bold text-gray-800 text-center mb-2">
                         <?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?>
                     </h3>
                     
                     <!-- Position & Company -->
-                    <div class="text-center mb-4">
-                        <p class="text-sm text-gray-600 mb-1">
+                    <div class="text-center mb-3 flex-grow-1">
+                        <p class="small text-secondary mb-1">
                             <?php echo htmlspecialchars($profile['position']); ?>
                         </p>
-                        <p class="text-sm text-gray-500">
+                        <p class="small text-muted mb-0">
                             <?php echo htmlspecialchars($profile['company']); ?>
                         </p>
                         <?php if (!empty($profile['industry'])): ?>
-                            <p class="text-xs text-gray-400 mt-1">
-                                <i class="fas fa-briefcase mr-1"></i>
+                            <p class="text-muted mt-1 mb-0" style="font-size:0.75rem;">
+                                <i class="fas fa-briefcase me-1"></i>
                                 <?php echo htmlspecialchars($profile['industry']); ?>
                             </p>
                         <?php endif; ?>
                     </div>
                     
                     <!-- Social Icons & Contact -->
-                    <div class="flex justify-center items-center gap-3 mb-4">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
                         <?php if (!empty($profile['linkedin_url'])): ?>
                             <a 
                                 href="<?php echo htmlspecialchars($profile['linkedin_url']); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md"
+                                class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm border-0"
+                                style="width:2.5rem;height:2.5rem;"
                                 title="LinkedIn Profile"
                             >
                                 <i class="fab fa-linkedin-in"></i>
@@ -228,7 +233,8 @@ ob_start();
                                 href="<?php echo htmlspecialchars($profile['xing_url']); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="w-10 h-10 flex items-center justify-center bg-green-700 text-white rounded-full hover:bg-green-800 transition-colors shadow-md"
+                                class="d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm border-0"
+                                style="width:2.5rem;height:2.5rem;background-color:#006567;"
                                 title="Xing Profile"
                             >
                                 <i class="fab fa-xing"></i>
@@ -239,11 +245,13 @@ ob_start();
                     <!-- Contact Button -->
                     <a 
                         href="mailto:<?php echo htmlspecialchars($profile['email']); ?>"
-                        class="block w-full text-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-md"
+                        class="btn w-100 fw-semibold shadow-sm text-white"
+                        style="background:linear-gradient(135deg,#7c3aed,#6d28d9);"
                     >
-                        <i class="fas fa-envelope mr-2"></i>
+                        <i class="fas fa-envelope me-2"></i>
                         Contact
                     </a>
+                </div>
                 </div>
             <?php endforeach; ?>
         </div>

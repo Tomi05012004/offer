@@ -70,17 +70,19 @@ ob_start();
             <!-- Search Input (Text) -->
             <div class="flex-1">
                 <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-search mr-1 text-blue-600"></i>
                     Nach Name suchen
                 </label>
-                <input 
-                    type="text" 
-                    id="search" 
-                    name="search" 
-                    value="<?php echo htmlspecialchars($searchKeyword); ?>"
-                    placeholder="Name eingeben..."
-                    class="w-full px-4 py-3 bg-white border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 transition-all"
-                >
+                <div class="directory-search-wrapper">
+                    <i class="fas fa-search directory-search-icon" aria-hidden="true"></i>
+                    <input 
+                        type="text" 
+                        id="search" 
+                        name="search" 
+                        value="<?php echo htmlspecialchars($searchKeyword); ?>"
+                        placeholder="Name eingeben..."
+                        class="w-full py-3 bg-white text-gray-900 dark:bg-gray-800 dark:text-white transition-all"
+                    >
+                </div>
             </div>
             
             <!-- Role Filter (Dropdown) -->
@@ -147,7 +149,7 @@ ob_start();
             <p class="text-gray-500">Bitte Suchfilter anpassen</p>
         </div>
     <?php else: ?>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             <?php foreach ($members as $member): ?>
                 <?php
                 // Determine role badge color
@@ -216,31 +218,32 @@ ob_start();
                     }
                 }
                 ?>
-                <div class="card p-6 hover:shadow-xl transition-shadow flex flex-col h-full relative">
+                <div class="col">
+                <div class="card directory-card p-4 d-flex flex-column h-100 position-relative">
                     <!-- Role Badge: Different colors for each role - Top Right Corner -->
-                    <div class="absolute top-4 right-4">
+                    <div class="position-absolute top-0 end-0 mt-3 me-3">
                         <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full border <?php echo $badgeClass; ?>">
                             <?php echo $displayRole; ?>
                         </span>
                     </div>
                     
                     <!-- Profile Image (Circle, top center) -->
-                    <div class="flex justify-center mb-4 mt-2">
+                    <div class="d-flex justify-content-center mb-3 mt-2">
                         <?php if ($showPlaceholder): ?>
                             <!-- Placeholder with initials - Colored background -->
-                            <div class="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-3xl font-bold shadow-lg">
+                            <div class="directory-avatar rounded-circle bg-purple-100 d-flex align-items-center justify-content-center text-purple-600 fw-bold shadow">
                                 <?php echo htmlspecialchars($initials); ?>
                             </div>
                         <?php else: ?>
                             <!-- Image with fallback to placeholder on error -->
-                            <div class="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-3xl font-bold overflow-hidden shadow-lg">
+                            <div class="directory-avatar rounded-circle bg-purple-100 d-flex align-items-center justify-content-center text-purple-600 fw-bold overflow-hidden shadow">
                                 <img 
                                     src="<?php echo htmlspecialchars($imagePath); ?>" 
                                     alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>"
-                                    class="w-full h-full object-cover"
+                                    class="w-100 h-100 object-fit-cover"
                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                                 >
-                                <div style="display:none;" class="w-full h-full flex items-center justify-center text-3xl">
+                                <div style="display:none;" class="w-100 h-100 d-flex align-items-center justify-content-center">
                                     <?php echo htmlspecialchars($initials); ?>
                                 </div>
                             </div>
@@ -248,25 +251,26 @@ ob_start();
                     </div>
                     
                     <!-- Name (Bold) -->
-                    <h3 class="text-lg font-bold text-gray-800 text-center mb-2">
+                    <h3 class="fs-6 fw-bold text-gray-800 text-center mb-2">
                         <?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>
                     </h3>
                     
                     <!-- Info Snippet: 'Position' or 'Studium + Degree' or 'Mitglied' -->
-                    <div class="text-center mb-4 flex-grow flex items-center justify-center" style="min-height: 3rem;">
-                        <p class="text-sm <?php echo ($infoSnippet === 'Mitglied') ? 'text-gray-500' : 'text-gray-600'; ?>">
-                            <i class="fas fa-briefcase mr-1 text-gray-400"></i>
+                    <div class="text-center mb-3 flex-grow-1 d-flex align-items-center justify-content-center" style="min-height:3rem;">
+                        <p class="small <?php echo ($infoSnippet === 'Mitglied') ? 'text-muted' : 'text-secondary'; ?> mb-0">
+                            <i class="fas fa-briefcase me-1 text-muted"></i>
                             <?php echo htmlspecialchars($infoSnippet); ?>
                         </p>
                     </div>
                     
                     <!-- Contact Icons: Small icons for Mail and LinkedIn (if set) -->
-                    <div class="flex justify-center items-center gap-3 mb-4">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
                         <!-- Mail Icon -->
                         <?php if (!empty($member['email'])): ?>
                             <a 
                                 href="mailto:<?php echo htmlspecialchars($member['email']); ?>" 
-                                class="w-10 h-10 flex items-center justify-center bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors shadow-md"
+                                class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle shadow-sm border-0"
+                                style="width:2.5rem;height:2.5rem;"
                                 title="E-Mail senden"
                             >
                                 <i class="fas fa-envelope"></i>
@@ -290,7 +294,8 @@ ob_start();
                                 href="<?php echo htmlspecialchars($linkedinUrl); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md"
+                                class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm border-0"
+                                style="width:2.5rem;height:2.5rem;"
                                 title="LinkedIn Profil"
                             >
                                 <i class="fab fa-linkedin-in"></i>
@@ -302,11 +307,12 @@ ob_start();
                     <!-- Action: 'Profil ansehen' Button -->
                     <a 
                         href="../alumni/view.php?id=<?php echo $member['profile_id']; ?>&return_to=members"
-                        class="block w-full text-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md"
+                        class="btn btn-primary w-100 fw-semibold shadow-sm"
                     >
-                        <i class="fas fa-user mr-2"></i>
+                        <i class="fas fa-user me-2"></i>
                         Profil ansehen
                     </a>
+                </div>
                 </div>
             <?php endforeach; ?>
         </div>

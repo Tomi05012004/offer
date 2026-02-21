@@ -243,7 +243,7 @@ body:not(.dark-mode) .sidebar a:hover {
 /* Sidebar Active State - Transparent overlay with blue left indicator */
 .sidebar a.active,
 .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
@@ -295,7 +295,7 @@ body.dark-mode .sidebar a:hover {
 
 body.dark-mode .sidebar a.active,
 body.dark-mode .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
@@ -333,7 +333,21 @@ body.dark-mode .sidebar-scroll {
 /* Sidebar Footer - Slightly darker background for visual separation */
 .sidebar-footer {
     background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Sidebar Footer Icons - Fixed width for alignment */
+.sidebar-footer a i,
+.sidebar-footer button i {
+    width: 1.25rem;
+    display: inline-block;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Sidebar Footer Profile & Settings - IBC blue icon accent on hover */
+.sidebar-footer a:not(.sidebar-logout):hover i {
+    color: var(--ibc-blue-light) !important;
 }
 
 /* Sidebar Logout - Reddish hover for visual distinction */
@@ -2003,10 +2017,11 @@ body:not(.dark-mode) .card:hover::after {
 .sidebar nav a {
     border-radius: 8px;
     margin: 2px 12px;
-    padding: 10px 16px !important;
+    padding: 10px 20px !important;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: 0.01em;
+    line-height: 1.65;
     transition: all 0.3s ease;
     position: relative;
     display: flex !important;
@@ -2024,7 +2039,7 @@ body:not(.dark-mode) .card:hover::after {
 
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;

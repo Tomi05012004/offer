@@ -171,7 +171,7 @@ ob_start();
                 $displayRole = htmlspecialchars($member['display_role'] ?? Auth::getRoleLabel($member['role']));
                 
                 // Generate initials for fallback
-                $initials = strtoupper(substr($member['first_name'], 0, 1) . substr($member['last_name'], 0, 1));
+                $initials = getMemberInitials($member['first_name'], $member['last_name']);
                 
                 // Check if image exists and is accessible
                 $imagePath = '';
@@ -222,21 +222,26 @@ ob_start();
                 <div class="card directory-card p-4 d-flex flex-column h-100 position-relative">
                     <!-- Role Badge: Different colors for each role - Top Right Corner -->
                     <div class="position-absolute top-0 end-0 mt-3 me-3">
-                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full border <?php echo $badgeClass; ?>">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold directory-role-badge border <?php echo $badgeClass; ?>">
                             <?php echo $displayRole; ?>
                         </span>
                     </div>
                     
                     <!-- Profile Image (Circle, top center) -->
                     <div class="d-flex justify-content-center mb-3 mt-2">
+                        <?php
+                        $avatarColor = getAvatarColor($member['first_name'] . ' ' . $member['last_name']);
+                        ?>
                         <?php if ($showPlaceholder): ?>
                             <!-- Placeholder with initials - Colored background -->
-                            <div class="directory-avatar rounded-circle bg-purple-100 d-flex align-items-center justify-content-center text-purple-600 fw-bold shadow">
+                            <div class="directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow"
+                                 style="background-color:<?php echo htmlspecialchars($avatarColor); ?>;">
                                 <?php echo htmlspecialchars($initials); ?>
                             </div>
                         <?php else: ?>
                             <!-- Image with fallback to placeholder on error -->
-                            <div class="directory-avatar rounded-circle bg-purple-100 d-flex align-items-center justify-content-center text-purple-600 fw-bold overflow-hidden shadow">
+                            <div class="directory-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold overflow-hidden shadow"
+                                 style="background-color:<?php echo htmlspecialchars($avatarColor); ?>;">
                                 <img 
                                     src="<?php echo htmlspecialchars($imagePath); ?>" 
                                     alt="<?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>"
@@ -251,7 +256,7 @@ ob_start();
                     </div>
                     
                     <!-- Name (Bold) -->
-                    <h3 class="fs-6 fw-bold text-gray-800 text-center mb-2">
+                    <h3 class="fs-6 directory-card-name text-gray-800 text-center mb-2">
                         <?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?>
                     </h3>
                     
@@ -269,8 +274,7 @@ ob_start();
                         <?php if (!empty($member['email'])): ?>
                             <a 
                                 href="mailto:<?php echo htmlspecialchars($member['email']); ?>" 
-                                class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle shadow-sm border-0"
-                                style="width:2.5rem;height:2.5rem;"
+                                class="directory-contact-icon"
                                 title="E-Mail senden"
                             >
                                 <i class="fas fa-envelope"></i>
@@ -294,8 +298,7 @@ ob_start();
                                 href="<?php echo htmlspecialchars($linkedinUrl); ?>" 
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm border-0"
-                                style="width:2.5rem;height:2.5rem;"
+                                class="directory-contact-icon"
                                 title="LinkedIn Profil"
                             >
                                 <i class="fab fa-linkedin-in"></i>

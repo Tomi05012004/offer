@@ -573,6 +573,22 @@ CREATE TABLE IF NOT EXISTS `links` (
 COMMENT='Useful links for quick access to frequently used tools and resources';
 
 -- ================================================
+-- TABLE: mail_queue
+-- ================================================
+CREATE TABLE IF NOT EXISTS `mail_queue` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `to_email` VARCHAR(255) NOT NULL COMMENT 'Recipient email address',
+  `subject` VARCHAR(500) NOT NULL COMMENT 'Email subject line',
+  `body` LONGTEXT NOT NULL COMMENT 'Full HTML email body',
+  `sent` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Send status: 0 = pending, 1 = sent',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `sent_at` DATETIME DEFAULT NULL COMMENT 'Timestamp when the email was successfully sent',
+  INDEX `idx_sent` (`sent`),
+  INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Email queue for batch processing via cron job (200 per batch, 60-minute cooldown)';
+
+-- ================================================
 -- SEED DATA: links
 -- ================================================
 INSERT IGNORE INTO `links` (`id`, `title`, `url`, `description`, `icon`, `sort_order`) VALUES

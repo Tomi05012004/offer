@@ -1,131 +1,118 @@
 <?php
 /**
- * Mass Mail Queue – Cron Script
+ * Mail Queue – Cron Script
  *
- * Processes the next pending batch (up to MAIL_BATCH_SIZE = 200) for any
- * paused mass-mail job whose next_run_at timestamp has been reached.
+ * Checks the mail_queue table for unsent emails and sends up to 200 per batch.
+ * A 60-minute cooldown is enforced between batches only when the previous batch
+ * reached the 200-mail limit (SMTP rate-limit protection).
  *
- * Recommended cron schedule (every 5 minutes so jobs are picked up promptly
- * once the 60-minute window has elapsed):
+ * After each mail the row is updated: sent = 1, sent_at = NOW().
+ * The batch start timestamp is stored in system_settings so the cooldown logic
+ * survives across separate cron invocations.
+ *
+ * Recommended cron schedule (every 5 minutes):
  *   *\/5 * * * * php /path/to/offer/cron/process_mail_queue.php >> /path/to/logs/mail_queue.log 2>&1
  *
  * Usage: php cron/process_mail_queue.php
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('This script must be run from the command line.' . PHP_EOL);
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../src/MailService.php';
 
-// Reuse the placeholder helper defined in mass_invitations.php without loading
-// the full page – duplicate it here as a standalone helper.
-if (!function_exists('applyMailPlaceholders')) {
-    function applyMailPlaceholders(string $body, string $firstName, string $lastName, string $eventName): string {
-        $anrede = $firstName !== '' ? "Hallo $firstName" : 'Hallo';
-        return str_replace(
-            ['{Anrede}', '{Vorname}', '{Nachname}', '{Event_Name}'],
-            [$anrede, $firstName, $lastName, $eventName],
-            $body
-        );
-    }
-}
+define('MAIL_BATCH_SIZE', 200);
+define('MAIL_BATCH_COOLDOWN_MINUTES', 60);
 
-/** Batch size must match MAIL_BATCH_SIZE in pages/admin/mass_invitations.php */
-define('CRON_BATCH_SIZE', 200);
-
-echo "=== Mass Mail Queue Cron ===\n";
+echo "=== Mail Queue Cron ===\n";
 echo "Started at: " . date('Y-m-d H:i:s') . "\n\n";
 
 try {
     $db = Database::getContentDB();
 
-    // Find all paused jobs whose next_run_at has been reached
-    $jobStmt = $db->query("
-        SELECT * FROM mass_mail_jobs
-        WHERE status = 'paused'
-          AND next_run_at IS NOT NULL
-          AND next_run_at <= NOW()
-        ORDER BY next_run_at ASC
-    ");
-    $jobs = $jobStmt->fetchAll();
+    // Check whether any unsent mails exist
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM mail_queue WHERE sent = 0")->fetchColumn();
 
-    if (empty($jobs)) {
-        echo "No jobs ready for processing.\n";
+    if ($pendingCount === 0) {
+        echo "No pending mails in queue.\n";
         exit(0);
     }
 
-    foreach ($jobs as $job) {
-        $jobId = (int)$job['id'];
-        echo "Processing job #{$jobId}: {$job['subject']}\n";
+    echo "Pending mails: {$pendingCount}\n";
 
-        // Fetch next pending batch
-        // CRON_BATCH_SIZE is a trusted integer constant – safe to interpolate as LIMIT
-        $pendingStmt = $db->prepare("
-            SELECT * FROM mass_mail_recipients
-            WHERE job_id = ? AND status = 'pending'
-            LIMIT " . (int)CRON_BATCH_SIZE
-        );
-        $pendingStmt->execute([$jobId]);
-        $batch = $pendingStmt->fetchAll();
+    // Retrieve cooldown-related settings persisted from the previous run.
+    // fetchColumn() returns false when no row exists (first-ever run), which
+    // means the cooldown check below is safely skipped on the initial execution.
+    $settingStmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
 
-        if (empty($batch)) {
-            // No pending recipients – mark as completed
-            $db->prepare("UPDATE mass_mail_jobs SET status = 'completed' WHERE id = ?")->execute([$jobId]);
-            echo "  → No pending recipients; job marked as completed.\n";
-            continue;
+    $settingStmt->execute(['mail_queue_last_block_started_at']);
+    $lastBlockStartedAt = $settingStmt->fetchColumn();
+
+    $settingStmt->execute(['mail_queue_last_batch_was_full']);
+    $lastBatchWasFull = $settingStmt->fetchColumn();
+
+    // Enforce cooldown only when the previous batch was a full batch (200 mails)
+    if ($lastBatchWasFull === '1' && is_string($lastBlockStartedAt) && $lastBlockStartedAt !== '') {
+        $minutesSince = (time() - strtotime($lastBlockStartedAt)) / 60;
+        if ($minutesSince < MAIL_BATCH_COOLDOWN_MINUTES) {
+            $waitMinutes = (int)ceil(MAIL_BATCH_COOLDOWN_MINUTES - $minutesSince);
+            echo "Cooldown active. Next batch in {$waitMinutes} minute(s).\n";
+            exit(0);
         }
+    }
 
-        $sent   = 0;
-        $failed = 0;
-        $updStatus = $db->prepare("
-            UPDATE mass_mail_recipients SET status = ?, processed_at = NOW() WHERE id = ?
-        ");
+    // Record the block start timestamp before sending
+    $blockStartedAt = date('Y-m-d H:i:s');
+    $upsert = $db->prepare("
+        INSERT INTO system_settings (setting_key, setting_value)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()
+    ");
+    $upsert->execute(['mail_queue_last_block_started_at', $blockStartedAt]);
 
-        foreach ($batch as $r) {
-            $firstName = $r['first_name'] ?? '';
-            $lastName  = $r['last_name']  ?? '';
-            $eventName = $job['event_name'] ?? '';
-            $personalBody = applyMailPlaceholders($job['body_template'], $firstName, $lastName, $eventName);
-            $sanitized = nl2br(htmlspecialchars($personalBody, ENT_QUOTES, 'UTF-8'));
-            $entraNote = '<p style="margin-top:20px;padding:12px;background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:14px;">'
-                . '<strong>Hinweis:</strong> Der Login ins IBC Intranet erfolgt ausschließlich über deinen Microsoft-Account (Entra ID). '
-                . 'Bitte nutze die Schaltfläche „Mit Microsoft anmelden" auf der Login-Seite.</p>';
-            $htmlBody = MailService::getTemplate(
-                htmlspecialchars($job['subject'], ENT_QUOTES, 'UTF-8'),
-                '<p class="email-text">' . $sanitized . '</p>' . $entraNote
-            );
+    // Fetch the next batch of unsent mails (oldest first)
+    $batchStmt = $db->prepare(
+        "SELECT id, to_email, subject, body
+         FROM mail_queue
+         WHERE sent = 0
+         ORDER BY created_at ASC
+         LIMIT " . (int)MAIL_BATCH_SIZE
+    );
+    $batchStmt->execute();
+    $batch = $batchStmt->fetchAll();
 
-            if (MailService::sendEmail($r['email'], $job['subject'], $htmlBody)) {
+    $sent   = 0;
+    $failed = 0;
+    $updStmt = $db->prepare("UPDATE mail_queue SET sent = 1, sent_at = NOW() WHERE id = ?");
+
+    foreach ($batch as $mail) {
+        try {
+            if (MailService::sendEmail($mail['to_email'], $mail['subject'], $mail['body'])) {
                 $sent++;
-                $updStatus->execute(['sent', $r['id']]);
+                $updStmt->execute([$mail['id']]);
             } else {
+                // Failed mails keep sent = 0 and will be retried in subsequent batches
                 $failed++;
-                $updStatus->execute(['failed', $r['id']]);
-                error_log("process_mail_queue: failed to send to " . $r['email'] . " (job #{$jobId})");
+                error_log("process_mail_queue: failed to send to " . $mail['to_email'] . " (id #{$mail['id']})");
             }
+        } catch (Exception $e) {
+            // Keep sent = 0 so the mail is retried in the next run
+            $failed++;
+            error_log("process_mail_queue: exception for id #{$mail['id']}: " . $e->getMessage());
         }
+    }
 
-        // Update counters and schedule next batch in 60 minutes
-        $db->prepare("
-            UPDATE mass_mail_jobs
-            SET sent_count   = sent_count + ?,
-                failed_count = failed_count + ?,
-                next_run_at  = DATE_ADD(NOW(), INTERVAL 1 HOUR)
-            WHERE id = ?
-        ")->execute([$sent, $failed, $jobId]);
+    // Persist whether this batch was full so the next run can decide on cooldown
+    $batchWasFull = count($batch) >= MAIL_BATCH_SIZE ? '1' : '0';
+    $upsert->execute(['mail_queue_last_batch_was_full', $batchWasFull]);
 
-        // Check whether all recipients are now processed
-        $cntStmt = $db->prepare("
-            SELECT COUNT(*) FROM mass_mail_recipients WHERE job_id = ? AND status = 'pending'
-        ");
-        $cntStmt->execute([$jobId]);
-        $remaining = (int)$cntStmt->fetchColumn();
-
-        if ($remaining === 0) {
-            $db->prepare("UPDATE mass_mail_jobs SET status = 'completed' WHERE id = ?")->execute([$jobId]);
-            echo "  → Sent: {$sent}, Failed: {$failed}. Job completed.\n";
-        } else {
-            echo "  → Sent: {$sent}, Failed: {$failed}. Remaining: {$remaining}. Next run scheduled.\n";
-        }
+    echo "Sent: {$sent}, Failed: {$failed}. Batch size: " . count($batch) . ".\n";
+    if ($batchWasFull === '1') {
+        echo "Batch limit reached. Next batch delayed by " . MAIL_BATCH_COOLDOWN_MINUTES . " minute(s).\n";
     }
 
 } catch (Exception $e) {

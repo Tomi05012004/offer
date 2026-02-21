@@ -28,6 +28,23 @@ function filterPollsForUser($polls, $userRole, $userAzureRoles = []) {
             return true;
         }
         
+        // Check target_roles (Entra-based visibility): if set, user must have at least one matching role
+        $targetRoles = !empty($poll['target_roles']) ? json_decode($poll['target_roles'], true) : null;
+        if ($targetRoles !== null && is_array($targetRoles) && count($targetRoles) > 0) {
+            $hasMatchingRole = false;
+            if (is_array($userAzureRoles)) {
+                foreach ($userAzureRoles as $userAzureRole) {
+                    if (in_array($userAzureRole, $targetRoles)) {
+                        $hasMatchingRole = true;
+                        break;
+                    }
+                }
+            }
+            if (!$hasMatchingRole) {
+                return false;
+            }
+        }
+
         // Check allowed_roles (Entra roles) if set
         $allowedRoles = !empty($poll['allowed_roles']) ? json_decode($poll['allowed_roles'], true) : null;
         if ($allowedRoles !== null) {

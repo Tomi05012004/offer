@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS `polls` (
   `visible_to_all` BOOLEAN NOT NULL DEFAULT 0 COMMENT 'If true, show poll to all users regardless of roles',
   `is_internal` BOOLEAN NOT NULL DEFAULT 1 COMMENT 'If true, hide poll after user votes. If false (external Forms), show hide button',
   `allowed_roles` JSON DEFAULT NULL COMMENT 'JSON array of Entra roles that can see this poll (filters against user azure_roles)',
+  `target_roles` JSON DEFAULT NULL COMMENT 'JSON array of Microsoft Entra roles required to see this poll',
   `is_active` BOOLEAN NOT NULL DEFAULT 1 COMMENT 'Flag to activate/deactivate poll display',
   `end_date` DATETIME DEFAULT NULL COMMENT 'Poll expiration date',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -132,6 +133,45 @@ CREATE TABLE IF NOT EXISTS `polls` (
   INDEX `idx_is_active` (`is_active`),
   INDEX `idx_end_date` (`end_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ================================================
+-- TABLE: mass_mail_jobs
+-- ================================================
+CREATE TABLE IF NOT EXISTS `mass_mail_jobs` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `subject` VARCHAR(255) NOT NULL COMMENT 'Email subject',
+  `body_template` TEXT NOT NULL COMMENT 'Raw body template with placeholders',
+  `event_name` VARCHAR(255) DEFAULT NULL COMMENT 'Value for {Event_Name} placeholder',
+  `status` ENUM('active','paused','completed') NOT NULL DEFAULT 'active' COMMENT 'Job status',
+  `next_run_at` DATETIME DEFAULT NULL COMMENT 'When this job should automatically continue',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `created_by` INT UNSIGNED DEFAULT NULL COMMENT 'User ID who created the job',
+  `total_recipients` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Total number of recipients',
+  `sent_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Number of emails sent so far',
+  `failed_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Number of failed sends',
+  INDEX `idx_status` (`status`),
+  INDEX `idx_next_run_at` (`next_run_at`),
+  INDEX `idx_created_by` (`created_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Tracks bulk email sending jobs for batch processing';
+
+-- ================================================
+-- TABLE: mass_mail_recipients
+-- ================================================
+CREATE TABLE IF NOT EXISTS `mass_mail_recipients` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `job_id` INT UNSIGNED NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `first_name` VARCHAR(100) DEFAULT NULL,
+  `last_name` VARCHAR(100) DEFAULT NULL,
+  `status` ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
+  `processed_at` DATETIME DEFAULT NULL,
+  FOREIGN KEY (`job_id`) REFERENCES `mass_mail_jobs`(`id`) ON DELETE CASCADE,
+  INDEX `idx_job_id` (`job_id`),
+  INDEX `idx_status` (`status`),
+  INDEX `idx_job_status` (`job_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Individual recipients for bulk email jobs';
 
 -- ================================================
 -- TABLE: poll_hidden_by_user

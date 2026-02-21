@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_poll'])) {
     $microsoftFormsUrl = trim($_POST['microsoft_forms_url'] ?? '');
     $targetGroups = $_POST['target_groups'] ?? [];
     $allowedRoles = $_POST['allowed_roles'] ?? [];
+    $targetRoles  = $_POST['target_roles']  ?? [];
     $customRoles = trim($_POST['custom_roles'] ?? '');
     $visibleToAll = isset($_POST['visible_to_all']) ? 1 : 0;
     $isInternal = isset($_POST['is_internal']) ? 1 : 0;
@@ -105,11 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_poll'])) {
             // Insert poll with Microsoft Forms URL and new fields
             $stmt = $db->prepare("
                 INSERT INTO polls (title, description, created_by, microsoft_forms_url, target_groups, 
-                                   allowed_roles, visible_to_all, is_internal, is_active, end_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, DATE_ADD(NOW(), INTERVAL 30 DAY))
+                                   allowed_roles, target_roles, visible_to_all, is_internal, is_active, end_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, DATE_ADD(NOW(), INTERVAL 30 DAY))
             ");
             $targetGroupsJson = json_encode($targetGroups);
             $allowedRolesJson = !empty($allowedRoles) ? json_encode($allowedRoles) : null;
+            $targetRolesJson  = !empty($targetRoles)  ? json_encode(array_values(array_unique($targetRoles))) : null;
             $stmt->execute([
                 $title, 
                 $description, 
@@ -117,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_poll'])) {
                 $microsoftFormsUrl, 
                 $targetGroupsJson,
                 $allowedRolesJson,
+                $targetRolesJson,
                 $visibleToAll,
                 $isInternal
             ]);
@@ -351,6 +354,35 @@ ob_start();
                 </p>
             </div>
 
+            <!-- Target Roles (Entra-based visibility) -->
+            <div id="target_roles_section" class="<?php echo (isset($_POST['visible_to_all'])) ? 'hidden' : ''; ?>">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Zielgruppen-Rollen (Microsoft Entra)
+                </label>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Nur Nutzer, deren Entra-Rollen mindestens eine der folgenden Rollen beinhalten, sehen diese Umfrage.
+                    Leer lassen, um keine Entra-Einschränkung zu setzen.
+                </p>
+                <div class="space-y-2 mb-3">
+                    <?php
+                    $selectedTargetRoles = $_POST['target_roles'] ?? [];
+                    foreach ($availableRoles as $role):
+                    ?>
+                    <label class="flex items-center p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer border border-indigo-100 dark:border-indigo-800">
+                        <input 
+                            type="checkbox" 
+                            name="target_roles[]" 
+                            value="<?php echo htmlspecialchars($role); ?>"
+                            <?php echo (in_array($role, $selectedTargetRoles)) ? 'checked' : ''; ?>
+                            class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        >
+                        <span class="ml-3 text-gray-700 dark:text-gray-300"><?php echo htmlspecialchars($role); ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
             <!-- Is Internal Option -->
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <label class="flex items-start cursor-pointer">
@@ -404,18 +436,26 @@ ob_start();
 </div>
 
 <script>
-// Toggle visibility of the allowed_roles_section based on visible_to_all checkbox
+// Toggle visibility of the allowed_roles_section and target_roles_section based on visible_to_all checkbox
 document.addEventListener('DOMContentLoaded', function() {
     const visibleToAllCheckbox = document.getElementById('visible_to_all');
-    const allowedRolesSection = document.getElementById('allowed_roles_section');
+    const allowedRolesSection  = document.getElementById('allowed_roles_section');
+    const targetRolesSection   = document.getElementById('target_roles_section');
     
-    if (visibleToAllCheckbox && allowedRolesSection) {
-        visibleToAllCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                allowedRolesSection.classList.add('hidden');
+    function toggleRoleSections(hide) {
+        [allowedRolesSection, targetRolesSection].forEach(function(section) {
+            if (!section) return;
+            if (hide) {
+                section.classList.add('hidden');
             } else {
-                allowedRolesSection.classList.remove('hidden');
+                section.classList.remove('hidden');
             }
+        });
+    }
+
+    if (visibleToAllCheckbox) {
+        visibleToAllCheckbox.addEventListener('change', function() {
+            toggleRoleSections(this.checked);
         });
     }
 });

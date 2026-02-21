@@ -330,6 +330,21 @@ body.dark-mode .sidebar-scroll {
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
 }
 
+/* Sidebar Footer - Slightly darker background for visual separation */
+.sidebar-footer {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sidebar Logout - Reddish hover for visual distinction */
+.sidebar .sidebar-logout:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+}
+.sidebar .sidebar-logout:hover i {
+    color: #fca5a5 !important;
+}
+
 /* Sidebar Submenu Styles */
 .menu-item-with-submenu .submenu {
     max-height: 0;

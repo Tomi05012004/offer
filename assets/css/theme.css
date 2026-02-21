@@ -4636,6 +4636,21 @@ img:not([loading]) {
     flex-shrink: 0;
 }
 
+/* Avatar placeholder: colored circle with bold white initials (MS-Teams style) */
+.avatar-placeholder {
+    width: 96px;
+    height: 96px;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    user-select: none;
+}
+
 /* Alumni avatar with purple gradient */
 .directory-avatar--purple {
     background: linear-gradient(135deg, #a78bfa, #7c3aed);

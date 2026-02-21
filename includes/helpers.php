@@ -227,6 +227,26 @@ function isAlumniRole($role) {
 }
 
 /**
+ * Extract initials from a full name string
+ * Returns the first letter of each of the first two name parts, uppercased
+ * Example: "Tom Lehmann" -> "TL"
+ *
+ * @param string $name Full name (e.g. "Tom Lehmann")
+ * @return string Up to two uppercase initials, or '?' if name is empty
+ */
+function getInitials($name) {
+    if (empty($name)) {
+        return '?';
+    }
+    $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY);
+    $initials = '';
+    foreach (array_slice($parts, 0, 2) as $part) {
+        $initials .= strtoupper(mb_substr($part, 0, 1, 'UTF-8'));
+    }
+    return $initials !== '' ? $initials : '?';
+}
+
+/**
  * Extract initials from first and last name
  *
  * @param string $firstName
@@ -234,10 +254,7 @@ function isAlumniRole($role) {
  * @return string Two-letter uppercase initials, or '?' if both are empty
  */
 function getMemberInitials($firstName, $lastName) {
-    $first = !empty($firstName) ? strtoupper(substr($firstName, 0, 1)) : '';
-    $last  = !empty($lastName)  ? strtoupper(substr($lastName,  0, 1)) : '';
-    $initials = $first . $last;
-    return $initials !== '' ? $initials : '?';
+    return getInitials($firstName . ' ' . $lastName);
 }
 
 /**

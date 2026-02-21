@@ -312,6 +312,9 @@ class Event {
                         
                         // Use MailService template
                         $htmlBody = MailService::getTemplate('Neues Event', $bodyContent, $callToAction);
+                        // Use absolute URL for logo so it renders in Outlook/Gmail
+                        $logoUrl = htmlspecialchars(BASE_URL . '/assets/img/ibc_logo_original_navbar.webp', ENT_QUOTES, 'UTF-8');
+                        $htmlBody = str_replace('cid:ibc_logo', $logoUrl, $htmlBody);
                         
                         // Send email
                         MailService::sendEmail($recipient['email'], $subject, $htmlBody);

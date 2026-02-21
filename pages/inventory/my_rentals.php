@@ -18,7 +18,7 @@ function getUserRentals($userId, $includeReturned = false) {
     ";
     
     if (!$includeReturned) {
-        $sql .= " AND r.actual_return IS NULL";
+        $sql .= " AND r.actual_return IS NULL AND r.status NOT IN ('returned', 'defective')";
     }
     
     $sql .= " ORDER BY r.created_at DESC";
@@ -133,7 +133,11 @@ ob_start();
                         <?php endif; ?>
                     </td>
                     <td class="px-4 py-3">
-                        <?php if ($isOverdue): ?>
+                        <?php if ($rental['status'] === 'pending_confirmation'): ?>
+                            <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                                Rückgabe ausstehend
+                            </span>
+                        <?php elseif ($isOverdue): ?>
                             <span class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
                                 Überfällig
                             </span>
@@ -144,10 +148,16 @@ ob_start();
                         <?php endif; ?>
                     </td>
                     <td class="px-4 py-3">
+                        <?php if ($rental['status'] === 'pending_confirmation'): ?>
+                            <span class="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">
+                                <i class="fas fa-clock mr-1"></i>Wartet auf Bestätigung
+                            </span>
+                        <?php else: ?>
                         <button onclick="openReturnModal(<?php echo $rental['id']; ?>, '<?php echo htmlspecialchars($rental['item_name'], ENT_QUOTES); ?>', <?php echo $rental['amount']; ?>, '<?php echo htmlspecialchars($rental['unit'], ENT_QUOTES); ?>')" 
                                 class="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm">
                             <i class="fas fa-undo mr-1"></i>Zurückgeben
                         </button>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -197,23 +207,19 @@ ob_start();
                     </td>
                     <td class="px-4 py-3">
                         <?php
-                        $statusColors = [
-                            'active' => 'green',
-                            'returned' => 'blue',
-                            'overdue' => 'red',
-                            'defective' => 'red'
+                        $statusClasses = [
+                            'active' => 'bg-green-100 text-green-700',
+                            'returned' => 'bg-blue-100 text-blue-700',
+                            'overdue' => 'bg-red-100 text-red-700',
+                            'defective' => 'bg-red-100 text-red-700',
+                            'pending_confirmation' => 'bg-yellow-100 text-yellow-700'
                         ];
                         $statusLabels = [
                             'active' => 'Aktiv',
                             'returned' => 'Zurückgegeben',
                             'overdue' => 'Überfällig',
-                            'defective' => 'Defekt'
-                        ];
-                        $statusClasses = [
-                            'active' => 'bg-green-100 text-green-700',
-                            'returned' => 'bg-blue-100 text-blue-700',
-                            'overdue' => 'bg-red-100 text-red-700',
-                            'defective' => 'bg-red-100 text-red-700'
+                            'defective' => 'Defekt',
+                            'pending_confirmation' => 'Rückgabe ausstehend'
                         ];
                         $statusClass = $statusClasses[$rental['status']] ?? 'bg-gray-100 text-gray-700';
                         $label = $statusLabels[$rental['status']] ?? htmlspecialchars($rental['status']);
@@ -255,10 +261,10 @@ ob_start();
             <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
                 <p class="text-sm text-blue-800">
                     <i class="fas fa-info-circle mr-2"></i>
-                    <strong>Alles in Ordnung?</strong>
+                    <strong>Hinweis:</strong>
                 </p>
                 <p class="text-sm text-blue-700 mt-1">
-                    Wenn der Artikel beschädigt oder defekt ist, bitte unten ankreuzen.
+                    Die Rückgabe wird als "Ausstehend" markiert und muss von einem Vorstandsmitglied bestätigt werden.
                 </p>
             </div>
 

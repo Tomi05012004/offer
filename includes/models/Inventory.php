@@ -24,7 +24,7 @@ class Inventory {
                    i.is_archived_in_easyverein,
                    c.name as category_name, c.color as category_color, 
                    l.name as location_name,
-                   i.quantity as available_quantity
+                   (i.quantity - COALESCE(i.quantity_borrowed, 0) - COALESCE(i.quantity_rented, 0)) as available_quantity
             FROM inventory_items i
             LEFT JOIN categories c ON i.category_id = c.id
             LEFT JOIN locations l ON i.location_id = l.id
@@ -45,11 +45,12 @@ class Inventory {
     public static function getAvailableStock($id) {
         $db = Database::getContentDB();
         
-        // Available stock = total quantity - quantity_borrowed
+        // Available stock = total quantity - quantity_borrowed - quantity_rented
         $stmt = $db->prepare("
             SELECT 
                 i.quantity,
-                COALESCE(i.quantity_borrowed, 0) as quantity_borrowed
+                COALESCE(i.quantity_borrowed, 0) as quantity_borrowed,
+                COALESCE(i.quantity_rented, 0) as quantity_rented
             FROM inventory_items i
             WHERE i.id = ?
         ");
@@ -60,8 +61,8 @@ class Inventory {
             return 0;
         }
         
-        // Formula: Total Stock - Borrowed
-        $availableStock = $result['quantity'] - $result['quantity_borrowed'];
+        // Formula: Total Stock - Borrowed - Rented
+        $availableStock = $result['quantity'] - $result['quantity_borrowed'] - $result['quantity_rented'];
         
         // Ensure non-negative
         return max(0, $availableStock);
@@ -148,7 +149,7 @@ class Inventory {
                        c.name as category_name, 
                        c.color as category_color,
                        l.name as location_name,
-                       i.quantity as available_quantity
+                       (i.quantity - COALESCE(i.quantity_borrowed, 0) - COALESCE(i.quantity_rented, 0)) as available_quantity
                 FROM inventory_items i
                 LEFT JOIN categories c ON i.category_id = c.id
                 LEFT JOIN locations l ON i.location_id = l.id" 
@@ -291,7 +292,7 @@ class Inventory {
     /**
      * Log history entry
      */
-    private static function logHistory($itemId, $userId, $changeType, $oldStock, $newStock, $changeAmount, $reason, $comment) {
+    public static function logHistory($itemId, $userId, $changeType, $oldStock, $newStock, $changeAmount, $reason, $comment) {
         $db = Database::getContentDB();
         $stmt = $db->prepare("
             INSERT INTO inventory_history (item_id, user_id, change_type, old_stock, new_stock, change_amount, reason, comment)
@@ -411,7 +412,7 @@ class Inventory {
         
         try {
             // Lock the row to prevent race conditions
-            $stmt = $db->prepare("SELECT quantity, COALESCE(quantity_borrowed, 0) AS quantity_borrowed, name FROM inventory_items WHERE id = ? FOR UPDATE");
+            $stmt = $db->prepare("SELECT quantity, COALESCE(quantity_borrowed, 0) AS quantity_borrowed, COALESCE(quantity_rented, 0) AS quantity_rented, name FROM inventory_items WHERE id = ? FOR UPDATE");
             $stmt->execute([$itemId]);
             $item = $stmt->fetch();
             
@@ -422,10 +423,10 @@ class Inventory {
             
             $newBorrowed = $item['quantity_borrowed'] + $quantity;
             
-            // Check if enough stock available
-            if ($newBorrowed > $item['quantity']) {
+            // Check if enough stock available (accounting for both borrowed and rented)
+            if ($newBorrowed + $item['quantity_rented'] > $item['quantity']) {
                 $db->rollBack();
-                $available = $item['quantity'] - $item['quantity_borrowed'];
+                $available = $item['quantity'] - $item['quantity_borrowed'] - $item['quantity_rented'];
                 return ['success' => false, 'message' => 'Nicht genügend Artikel verfügbar. Verfügbar: ' . $available];
             }
             
@@ -672,13 +673,14 @@ class Inventory {
     public static function getCheckedOutStats() {
         $db = Database::getContentDB();
         
-        // Calculate total items out (sum of all amounts from active rentals)
+        // Calculate total items out (sum of all amounts from active and pending rentals)
         $stmt = $db->query("
             SELECT 
                 COALESCE(SUM(r.amount), 0) as total_items_out,
                 COUNT(DISTINCT r.user_id) as unique_users
             FROM rentals r
             WHERE r.actual_return IS NULL
+            AND r.status IN ('active', 'pending_confirmation')
         ");
         $stats = $stmt->fetch();
         
@@ -687,6 +689,7 @@ class Inventory {
             SELECT COUNT(*) as overdue
             FROM rentals r
             WHERE r.actual_return IS NULL
+            AND r.status = 'active'
             AND r.expected_return IS NOT NULL
             AND r.expected_return < CURDATE()
         ");
@@ -701,11 +704,13 @@ class Inventory {
                 r.amount,
                 r.created_at as rented_at,
                 r.expected_return,
+                r.status,
                 i.name as item_name,
                 i.unit
             FROM rentals r
             JOIN inventory_items i ON r.item_id = i.id
             WHERE r.actual_return IS NULL
+            AND r.status IN ('active', 'pending_confirmation')
             ORDER BY r.created_at DESC
         ");
         $checkouts = $stmt->fetchAll();
@@ -918,6 +923,59 @@ class Inventory {
         ];
     }
     
+    /**
+     * Confirm a pending rental return (board/head only)
+     * 
+     * Sets rental status to 'returned', sets actual_return, and decrements quantity_rented.
+     * 
+     * @param int $rentalId Rental ID to confirm
+     * @param int $confirmingUserId User ID of the board member confirming
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public static function confirmReturn($rentalId, $confirmingUserId) {
+        $db = Database::getContentDB();
+        
+        // Get rental record
+        $stmt = $db->prepare("
+            SELECT r.*, COALESCE(i.quantity_rented, 0) AS quantity_rented, i.name
+            FROM rentals r
+            JOIN inventory_items i ON r.item_id = i.id
+            WHERE r.id = ? AND r.status = 'pending_confirmation'
+        ");
+        $stmt->execute([$rentalId]);
+        $rental = $stmt->fetch();
+        
+        if (!$rental) {
+            return ['success' => false, 'message' => 'Ausleihe nicht gefunden oder nicht im Status "Rückgabe ausstehend"'];
+        }
+        
+        $db->beginTransaction();
+        
+        try {
+            // Mark rental as returned
+            $stmt = $db->prepare("
+                UPDATE rentals 
+                SET actual_return = NOW(), status = 'returned'
+                WHERE id = ?
+            ");
+            $stmt->execute([$rentalId]);
+            
+            // Decrement quantity_rented
+            $newRented = max(0, $rental['quantity_rented'] - $rental['amount']);
+            $stmt = $db->prepare("UPDATE inventory_items SET quantity_rented = ? WHERE id = ?");
+            $stmt->execute([$newRented, $rental['item_id']]);
+            
+            // Log confirmation
+            self::logHistory($rental['item_id'], $confirmingUserId, 'checkin', $rental['quantity_rented'], $newRented, $rental['amount'], 'Rückgabe bestätigt', 'Rückgabe durch Vorstand bestätigt');
+            
+            $db->commit();
+            return ['success' => true, 'message' => 'Rückgabe erfolgreich bestätigt'];
+        } catch (Exception $e) {
+            $db->rollBack();
+            return ['success' => false, 'message' => 'Fehler bei der Bestätigung: ' . $e->getMessage()];
+        }
+    }
+
     /**
      * Sync inventory from EasyVerein
      * 

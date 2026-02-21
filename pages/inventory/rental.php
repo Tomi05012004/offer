@@ -45,8 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rental'])) {
         exit;
     }
     
-    if ($item['quantity'] < $amount) {
-        $_SESSION['rental_error'] = 'Nicht genügend Bestand verfügbar';
+    $available = ($item['quantity'] ?? 0) - ($item['quantity_borrowed'] ?? 0) - ($item['quantity_rented'] ?? 0);
+    if ($available < $amount) {
+        $_SESSION['rental_error'] = 'Nicht genügend Bestand verfügbar. Verfügbar: ' . max(0, $available);
         header('Location: view.php?id=' . $itemId);
         exit;
     }
@@ -57,20 +58,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rental'])) {
         
         // Create rental record
         $stmt = $db->prepare("
-            INSERT INTO rentals (user_id, item_id, amount, expected_return)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO rentals (user_id, item_id, amount, expected_return, purpose, status)
+            VALUES (?, ?, ?, ?, ?, 'active')
         ");
         $stmt->execute([
             $_SESSION['user_id'],
             $itemId,
             $amount,
-            $expectedReturn
+            $expectedReturn,
+            $purpose
         ]);
         
-        // Update inventory stock
-        $newStock = $item['quantity'] - $amount;
-        $stmt = $db->prepare("UPDATE inventory_items SET quantity = ? WHERE id = ?");
-        $stmt->execute([$newStock, $itemId]);
+        // Increment quantity_rented (track rented items without touching total stock)
+        $stmt = $db->prepare("UPDATE inventory_items SET quantity_rented = COALESCE(quantity_rented, 0) + ? WHERE id = ?");
+        $stmt->execute([$amount, $itemId]);
         
         // Log the change
         Inventory::logHistory(
@@ -78,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_rental'])) {
             $_SESSION['user_id'],
             'checkout',
             $item['quantity'],
-            $newStock,
+            $item['quantity'],
             -$amount,
             'Ausgeliehen',
             $purpose
@@ -135,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_rental'])) {
             SELECT r.*, i.quantity, i.name as item_name
             FROM rentals r
             JOIN inventory_items i ON r.item_id = i.id
-            WHERE r.id = ? AND r.user_id = ? AND r.actual_return IS NULL
+            WHERE r.id = ? AND r.user_id = ? AND r.actual_return IS NULL AND r.status = 'active'
         ");
         $stmt->execute([$rentalId, $_SESSION['user_id']]);
         $rental = $stmt->fetch();
@@ -148,50 +149,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['return_rental'])) {
         
         $db->beginTransaction();
         
-        // Determine new status
-        $newStatus = $isDefective ? 'defective' : 'returned';
-        
-        // Update rental record
+        // Mark rental as pending confirmation (board must confirm the return)
         $stmt = $db->prepare("
             UPDATE rentals 
-            SET actual_return = NOW(), 
-                status = ?, 
-                defect_notes = ?,
-                updated_at = NOW()
+            SET status = 'pending_confirmation', 
+                defect_notes = ?
             WHERE id = ?
         ");
-        $stmt->execute([$newStatus, $defectNotes, $rentalId]);
-        
-        // Update inventory stock (only add back if not defective)
-        $returnAmount = $isDefective ? 0 : $rental['amount'];
-        $newStock = $rental['quantity'] + $returnAmount;
-        
-        $stmt = $db->prepare("UPDATE inventory_items SET quantity = ? WHERE id = ?");
-        $stmt->execute([$newStock, $rental['item_id']]);
-        
-        // Log the change
-        $changeType = $isDefective ? 'writeoff' : 'checkin';
-        $reason = $isDefective ? 'Defekt zurückgegeben' : 'Zurückgegeben';
-        $comment = $isDefective ? "Defekt: " . $defectNotes : 'Artikel zurückgegeben';
-        
-        Inventory::logHistory(
-            $rental['item_id'],
-            $_SESSION['user_id'],
-            $changeType,
-            $rental['quantity'],
-            $newStock,
-            $returnAmount,
-            $reason,
-            $comment
-        );
+        $stmt->execute([$defectNotes, $rentalId]);
         
         $db->commit();
         
-        if ($isDefective) {
-            $_SESSION['rental_success'] = 'Artikel als defekt gemeldet. Vielen Dank für Deine Rückmeldung.';
-        } else {
-            $_SESSION['rental_success'] = 'Artikel erfolgreich zurückgegeben!';
-        }
+        $_SESSION['rental_success'] = 'Rückgabe wurde als "Ausstehend" markiert. Ein Vorstandsmitglied wird die Rückgabe bestätigen.';
         
         header('Location: my_rentals.php');
         exit;

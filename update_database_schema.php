@@ -576,6 +576,7 @@ try {
         url VARCHAR(500) NOT NULL,
         description VARCHAR(500) DEFAULT NULL,
         icon VARCHAR(100) DEFAULT 'fas fa-link',
+        category VARCHAR(100) DEFAULT NULL COMMENT 'Optional category for grouping links',
         sort_order INT UNSIGNED DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -591,6 +592,13 @@ try {
         $content_db,
         $create_links_table,
         "Create links table"
+    );
+    
+    // Add category column to links table
+    executeSql(
+        $content_db,
+        "ALTER TABLE links ADD COLUMN category VARCHAR(100) DEFAULT NULL COMMENT 'Optional category for grouping links'",
+        "Add category column to links table"
     );
     
     // ============================================

@@ -44,7 +44,7 @@ if ($isEdit) {
     if (!$lockResult['success']) {
         $readOnly = true;
         $lockedUser = User::getById($lockResult['locked_by']);
-        $lockWarning = 'Dieses Event wird gerade von ' . htmlspecialchars($lockedUser['first_name'] . ' ' . $lockedUser['last_name']) . ' bearbeitet. Du befindest Dich im Nur-Lesen-Modus.';
+        $lockWarning = 'Dieses Event wird gerade von ' . htmlspecialchars(($lockedUser['first_name'] ?? '') . ' ' . ($lockedUser['last_name'] ?? '')) . ' bearbeitet. Du befindest Dich im Nur-Lesen-Modus.';
     }
     
     // Get history
@@ -706,7 +706,7 @@ ob_start();
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-1">
                     <span class="font-medium text-gray-800">
-                        <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>
+                        <?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')); ?>
                     </span>
                     <span class="text-xs text-gray-500">
                         <?php echo date('d.m.Y H:i', strtotime($entry['created_at'])); ?>

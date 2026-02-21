@@ -116,7 +116,7 @@ ob_start();
                         <span class="font-semibold"><?php echo $rental['amount']; ?></span> <?php echo htmlspecialchars($rental['unit']); ?>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">
-                        <?php echo date('d.m.Y', strtotime($rental['rented_at'])); ?>
+                        <?php echo date('d.m.Y', strtotime($rental['rented_at'] ?? '')); ?>
                     </td>
                     <td class="px-4 py-3 text-sm">
                         <?php if ($rental['expected_return']): ?>
@@ -190,7 +190,7 @@ ob_start();
                         <span class="font-semibold"><?php echo $rental['amount']; ?></span> <?php echo htmlspecialchars($rental['unit']); ?>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">
-                        <?php echo date('d.m.Y', strtotime($rental['rented_at'])); ?>
+                        <?php echo date('d.m.Y', strtotime($rental['rented_at'] ?? '')); ?>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">
                         <?php echo $rental['actual_return'] ? date('d.m.Y', strtotime($rental['actual_return'])) : '-'; ?>

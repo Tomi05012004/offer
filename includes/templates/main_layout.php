@@ -741,7 +741,7 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
         </div>
 
         <!-- User Profile Section -->
-        <div class='mt-auto border-t border-white/10 pt-6 pb-5 px-5 bg-gradient-to-b from-black/20 to-black/35 backdrop-blur-sm'>
+        <div class='sidebar-footer mt-auto pt-4 pb-4 px-5'>
             <?php 
             $currentUser = Auth::user();
             
@@ -833,57 +833,46 @@ if (Auth::check() && isset($_SESSION['profile_incomplete']) && $_SESSION['profil
             ?>
 
             <!-- User Info -->
-            <div class='flex items-center gap-3 mb-5'>
-                <div class='w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-white/20 shrink-0'>
+            <div class='flex items-center gap-2 mb-4'>
+                <div class='w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow border border-white/20 shrink-0'>
                     <?php echo $initials; ?>
                 </div>
                 <div class='flex-1 min-w-0'>
                     <?php if (!empty($firstname) || !empty($lastname)): ?>
-                    <p class='text-sm font-semibold text-white dark:text-slate-200 truncate leading-snug mb-0.5' title='<?php echo htmlspecialchars($firstname . ' ' . $lastname); ?>'>
+                    <p class='text-xs font-semibold text-white truncate leading-snug mb-0.5' title='<?php echo htmlspecialchars($firstname . ' ' . $lastname); ?>'>
                         <?php echo htmlspecialchars($firstname . ' ' . $lastname); ?>
                     </p>
                     <?php endif; ?>
-                    <p class='text-[11px] text-white/80 truncate leading-snug mb-1' title='<?php echo htmlspecialchars($email); ?>'>
+                    <p class='text-[11px] text-white/70 truncate leading-snug' title='<?php echo htmlspecialchars($email); ?>'>
                         <?php echo htmlspecialchars($email); ?>
                     </p>
-                    <div class='flex flex-wrap gap-1'>
-                        <?php foreach ($displayRoles as $displayRole): ?>
-                        <span class='inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-white/10 text-white dark:text-slate-200 border border-white/20'>
-                            <?php echo htmlspecialchars($displayRole); ?>
-                        </span>
-                        <?php endforeach; ?>
-                    </div>
                 </div>
             </div>
             
-            <!-- Bottom Section Links -->
-            <div class='mb-3 space-y-2'>
-                <!-- Profilangaben -->
-                <a href='<?php echo asset('pages/auth/profile.php'); ?>' 
-                   class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/profile.php') ? 'bg-white/10' : ''; ?>'>
-                    <i class='fas fa-user text-xs mr-2'></i> 
-                    <span>Mein Profil</span>
-                </a>
-                <!-- Einstellungen (sub-item under Mein Profil) -->
-                <a href='<?php echo asset('pages/auth/settings.php'); ?>' 
-                   class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/80 dark:text-slate-300 border border-white/20 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm <?php echo isActivePath('/auth/settings.php') ? 'bg-white/10' : ''; ?>'>
-                    <i class='fas fa-cog text-xs mr-2'></i> 
-                    <span>Einstellungen</span>
-                </a>
-            </div>
-            
-            <!-- Logout Button -->
-            <a href='<?php echo asset('pages/auth/logout.php'); ?>' 
-               class='flex items-center justify-start w-full px-4 py-2 mb-3 text-xs font-medium text-white/90 dark:text-slate-200 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm'>
-                <i class='fas fa-sign-out-alt text-xs mr-2 group-hover:translate-x-0.5 transition-transform'></i> 
-                <span>Abmelden</span>
+            <!-- Profile Navigation -->
+            <a href='<?php echo asset('pages/auth/profile.php'); ?>' 
+               class='flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/auth/profile.php') ? 'bg-white/20 border-l-4 border-ibc-green' : ''; ?>'>
+                <i class='fas fa-user w-5 mr-3'></i>
+                <span>Mein Profil</span>
             </a>
-            
+            <a href='<?php echo asset('pages/auth/settings.php'); ?>' 
+               class='flex items-center px-6 py-2 text-white hover:bg-white/10 transition-colors duration-200 <?php echo isActivePath('/auth/settings.php') ? 'bg-white/20 border-l-4 border-ibc-green' : ''; ?>'>
+                <i class='fas fa-cog w-5 mr-3'></i>
+                <span>Einstellungen</span>
+            </a>
+
             <!-- Dark/Light Mode Toggle -->
-            <button id="theme-toggle" class='flex items-center justify-start w-full px-4 py-2 text-xs font-medium text-white/90 border border-white/30 rounded-lg hover:bg-white/10 hover:text-white hover:border-white/50 transition-all duration-200 group backdrop-blur-sm' aria-label="Zwischen hellem und dunklem Modus wechseln">
-                <i id="theme-icon" class='fas fa-moon text-xs mr-2'></i>
+            <button id="theme-toggle" class='flex items-center px-6 py-2 w-full text-left text-white hover:bg-white/10 transition-colors duration-200' aria-label="Zwischen hellem und dunklem Modus wechseln">
+                <i id="theme-icon" class='fas fa-moon w-5 mr-3'></i>
                 <span id="theme-text">Darkmode</span>
             </button>
+
+            <!-- Logout -->
+            <a href='<?php echo asset('pages/auth/logout.php'); ?>' 
+               class='sidebar-logout flex items-center px-6 py-2 mt-2 text-white transition-colors duration-200'>
+                <i class='fas fa-sign-out-alt w-5 mr-3'></i>
+                <span>Abmelden</span>
+            </a>
             
             <!-- Live Clock -->
             <div class='mt-4 pt-4 border-t border-white/20 text-center'>

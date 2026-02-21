@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../src/MailService.php';
 require_once __DIR__ . '/../../includes/models/User.php';
 require_once __DIR__ . '/../../includes/helpers.php';
 require_once __DIR__ . '/../../includes/handlers/CSRFHandler.php';
+require_once __DIR__ . '/../../includes/database.php';
 
 if (!Auth::check() || !Auth::canManageUsers()) {
     header('Location: ../auth/login.php');
@@ -17,6 +18,42 @@ if (!Auth::check() || !Auth::canManageUsers()) {
 
 $message = '';
 $error   = '';
+
+const MAIL_BATCH_SIZE = 200;
+
+// Role groups for quick-select
+const ALUMNI_ROLES    = ['alumni', 'alumni_auditor', 'honorary_member', 'alumni_board'];
+const MITGLIEDER_ROLES = ['board_internal', 'board_external', 'board_finance', 'member', 'candidate', 'head'];
+
+/**
+ * Apply placeholder substitution to a mail body for one recipient.
+ */
+function applyMailPlaceholders(string $body, string $firstName, string $lastName, string $eventName): string {
+    $anrede = $firstName !== '' ? "Hallo $firstName" : 'Hallo';
+    return str_replace(
+        ['{Anrede}', '{Vorname}', '{Nachname}', '{Event_Name}'],
+        [$anrede, $firstName, $lastName, $eventName],
+        $body
+    );
+}
+
+/**
+ * Send one personalised email and return true on success.
+ */
+function sendPersonalisedMail(array $r, string $subject, string $rawBody, string $eventName): bool {
+    $firstName = $r['first_name'] ?? '';
+    $lastName  = $r['last_name']  ?? '';
+    $personalBody = applyMailPlaceholders($rawBody, $firstName, $lastName, $eventName);
+    $sanitized = nl2br(htmlspecialchars($personalBody, ENT_QUOTES, 'UTF-8'));
+    $entraNote = '<p style="margin-top:20px;padding:12px;background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:14px;">'
+        . '<strong>Hinweis:</strong> Der Login ins IBC Intranet erfolgt ausschließlich über deinen Microsoft-Account (Entra ID). '
+        . 'Bitte nutze die Schaltfläche „Mit Microsoft anmelden" auf der Login-Seite.</p>';
+    $htmlBody = MailService::getTemplate(
+        htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
+        '<p class="email-text">' . $sanitized . '</p>' . $entraNote
+    );
+    return MailService::sendEmail($r['email'], $subject, $htmlBody);
+}
 
 // Load available JSON templates
 $templateDir  = realpath(__DIR__ . '/../../assets/mail_vorlage');
@@ -38,8 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_bulk_invite'])) 
     if (!CSRFHandler::validateToken($csrfToken)) {
         $error = 'Ungültiges CSRF-Token.';
     } else {
-        $subject = trim($_POST['bulk_subject'] ?? '');
-        $body    = trim($_POST['bulk_body']    ?? '');
+        $subject   = trim($_POST['bulk_subject'] ?? '');
+        $body      = trim($_POST['bulk_body']    ?? '');
+        $eventName = trim($_POST['event_name']   ?? '');
 
         if (empty($subject) || empty($body)) {
             $error = 'Betreff und Nachrichtentext dürfen nicht leer sein.';
@@ -53,8 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_bulk_invite'])) 
                     while (($row = fgetcsv($handle)) !== false) {
                         $email = trim($row[0]);
                         if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                            $name = isset($row[1]) ? trim($row[1]) : '';
-                            $recipients[] = ['email' => $email, 'name' => $name];
+                            $recipients[] = [
+                                'email'      => $email,
+                                'first_name' => isset($row[1]) ? trim($row[1]) : '',
+                                'last_name'  => isset($row[2]) ? trim($row[2]) : '',
+                            ];
                         }
                     }
                     fclose($handle);
@@ -68,8 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_bulk_invite'])) 
                 $idSet    = array_flip(array_map('intval', $selectedIds));
                 foreach ($allUsers as $u) {
                     if (isset($idSet[(int)$u['id']])) {
-                        $name         = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
-                        $recipients[] = ['email' => $u['email'], 'name' => $name];
+                        $recipients[] = [
+                            'email'      => $u['email'],
+                            'first_name' => $u['first_name'] ?? '',
+                            'last_name'  => $u['last_name']  ?? '',
+                        ];
                     }
                 }
             }
@@ -77,37 +121,221 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_bulk_invite'])) 
             if (empty($recipients)) {
                 $error = 'Keine Empfänger ausgewählt. Bitte CSV hochladen oder Benutzer auswählen.';
             } else {
-                $sent   = 0;
-                $failed = 0;
-                $entraNote = '<p style="margin-top:20px;padding:12px;background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:14px;">'
-                    . '<strong>Hinweis:</strong> Der Login ins IBC Intranet erfolgt ausschließlich über deinen Microsoft-Account (Entra ID). '
-                    . 'Bitte nutze die Schaltfläche „Mit Microsoft anmelden" auf der Login-Seite.</p>';
+                $total = count($recipients);
 
-                foreach ($recipients as $r) {
-                    $sanitizedBody = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
-                    $htmlBody = MailService::getTemplate(
-                        htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
-                        '<p class="email-text">' . $sanitizedBody . '</p>' . $entraNote
-                    );
-                    if (MailService::sendEmail($r['email'], $subject, $htmlBody)) {
-                        $sent++;
-                    } else {
-                        $failed++;
-                        error_log("Bulk invite: failed to send to " . $r['email']);
+                if ($total > MAIL_BATCH_SIZE) {
+                    // Queue all recipients, send the first batch immediately
+                    try {
+                        $db    = Database::getContentDB();
+                        $jobId = null;
+
+                        $db->beginTransaction();
+                        $stmt = $db->prepare("
+                            INSERT INTO mass_mail_jobs
+                                (subject, body_template, event_name, status, next_run_at, created_by, total_recipients)
+                            VALUES (?, ?, ?, 'paused', DATE_ADD(NOW(), INTERVAL 1 HOUR), ?, ?)
+                        ");
+                        $stmt->execute([$subject, $body, $eventName, Auth::user()['id'], $total]);
+                        $jobId = (int)$db->lastInsertId();
+
+                        $insRecip = $db->prepare("
+                            INSERT INTO mass_mail_recipients (job_id, email, first_name, last_name)
+                            VALUES (?, ?, ?, ?)
+                        ");
+                        foreach ($recipients as $r) {
+                            $insRecip->execute([$jobId, $r['email'], $r['first_name'], $r['last_name']]);
+                        }
+                        $db->commit();
+
+                        // Send first batch
+                        $sent   = 0;
+                        $failed = 0;
+                        $batch  = array_slice($recipients, 0, MAIL_BATCH_SIZE);
+                        $updStatus = $db->prepare("
+                            UPDATE mass_mail_recipients SET status = ?, processed_at = NOW()
+                            WHERE job_id = ? AND email = ? AND status = 'pending'
+                        ");
+                        foreach ($batch as $r) {
+                            if (sendPersonalisedMail($r, $subject, $body, $eventName)) {
+                                $sent++;
+                                $updStatus->execute(['sent', $jobId, $r['email']]);
+                            } else {
+                                $failed++;
+                                $updStatus->execute(['failed', $jobId, $r['email']]);
+                                error_log("Bulk invite: failed to send to " . $r['email']);
+                            }
+                        }
+
+                        $db->prepare("
+                            UPDATE mass_mail_jobs SET sent_count = sent_count + ?, failed_count = failed_count + ?
+                            WHERE id = ?
+                        ")->execute([$sent, $failed, $jobId]);
+
+                        $remaining = $total - MAIL_BATCH_SIZE;
+                        $message   = "Erste " . MAIL_BATCH_SIZE . " E-Mail(s) versendet (Versandt: {$sent}, Fehlgeschlagen: {$failed}). "
+                            . "{$remaining} weitere wurden in die Warteschlange gestellt und werden automatisch nach 1 Stunde fortgesetzt.";
+                    } catch (Exception $e) {
+                        if (isset($db) && $db->inTransaction()) {
+                            $db->rollBack();
+                        }
+                        error_log("Batch mail queue error: " . $e->getMessage());
+                        $error = 'Fehler beim Erstellen der Warteschlange. Bitte versuchen Sie es erneut.';
                     }
-                }
-
-                if ($failed === 0) {
-                    $message = "Einladungen erfolgreich versendet: {$sent} E-Mail(s).";
                 } else {
-                    $message = "Versandt: {$sent}, Fehlgeschlagen: {$failed}.";
+                    // Small batch – send all directly
+                    $sent   = 0;
+                    $failed = 0;
+                    foreach ($recipients as $r) {
+                        if (sendPersonalisedMail($r, $subject, $body, $eventName)) {
+                            $sent++;
+                        } else {
+                            $failed++;
+                            error_log("Bulk invite: failed to send to " . $r['email']);
+                        }
+                    }
+
+                    if ($failed === 0) {
+                        $message = "Einladungen erfolgreich versendet: {$sent} E-Mail(s).";
+                    } else {
+                        $message = "Versandt: {$sent}, Fehlgeschlagen: {$failed}.";
+                    }
                 }
             }
         }
     }
 }
 
+// Handle "Continue queue" button
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['continue_queue'])) {
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!CSRFHandler::validateToken($csrfToken)) {
+        $error = 'Ungültiges CSRF-Token.';
+    } else {
+        $jobId = (int)($_POST['job_id'] ?? 0);
+        if ($jobId > 0) {
+            try {
+                $db   = Database::getContentDB();
+                $stmt = $db->prepare("SELECT * FROM mass_mail_jobs WHERE id = ? AND status = 'paused'");
+                $stmt->execute([$jobId]);
+                $job = $stmt->fetch();
+
+                if ($job) {
+                    // MAIL_BATCH_SIZE is a trusted integer constant – safe to interpolate as LIMIT
+                    $pendingStmt = $db->prepare("
+                        SELECT * FROM mass_mail_recipients WHERE job_id = ? AND status = 'pending'
+                        LIMIT " . MAIL_BATCH_SIZE
+                    );
+                    $pendingStmt->execute([$jobId]);
+                    $batch = $pendingStmt->fetchAll();
+
+                    $sent   = 0;
+                    $failed = 0;
+                    $updStatus = $db->prepare("
+                        UPDATE mass_mail_recipients SET status = ?, processed_at = NOW()
+                        WHERE id = ?
+                    ");
+                    foreach ($batch as $r) {
+                        if (sendPersonalisedMail($r, $job['subject'], $job['body_template'], $job['event_name'] ?? '')) {
+                            $sent++;
+                            $updStatus->execute(['sent', $r['id']]);
+                        } else {
+                            $failed++;
+                            $updStatus->execute(['failed', $r['id']]);
+                        }
+                    }
+
+                    $db->prepare("
+                        UPDATE mass_mail_jobs SET sent_count = sent_count + ?, failed_count = failed_count + ?,
+                            next_run_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+                        WHERE id = ?
+                    ")->execute([$sent, $failed, $jobId]);
+
+                    // Check if all done
+                    $cntStmt = $db->prepare("
+                        SELECT COUNT(*) FROM mass_mail_recipients WHERE job_id = ? AND status = 'pending'
+                    ");
+                    $cntStmt->execute([$jobId]);
+                    $remaining = (int)$cntStmt->fetchColumn();
+                    if ($remaining === 0) {
+                        $db->prepare("UPDATE mass_mail_jobs SET status = 'completed' WHERE id = ?")->execute([$jobId]);
+                    }
+
+                    $message = "Batch verarbeitet – Versandt: {$sent}, Fehlgeschlagen: {$failed}. Verbleibend: {$remaining}.";
+                } else {
+                    $error = 'Job nicht gefunden oder bereits abgeschlossen.';
+                }
+            } catch (Exception $e) {
+                error_log("Continue queue error: " . $e->getMessage());
+                $error = 'Fehler beim Fortsetzen der Warteschlange.';
+            }
+        }
+    }
+}
+
+// Auto-process paused jobs whose next_run_at has passed
+try {
+    $db = Database::getContentDB();
+    $autoJobs = $db->query("
+        SELECT * FROM mass_mail_jobs
+        WHERE status = 'paused' AND next_run_at IS NOT NULL AND next_run_at <= NOW()
+        LIMIT 1
+    ")->fetchAll();
+    foreach ($autoJobs as $job) {
+        // MAIL_BATCH_SIZE is a trusted integer constant – safe to interpolate as LIMIT
+        $pendingStmt = $db->prepare("
+            SELECT * FROM mass_mail_recipients WHERE job_id = ? AND status = 'pending'
+            LIMIT " . MAIL_BATCH_SIZE
+        );
+        $pendingStmt->execute([$job['id']]);
+        $batch = $pendingStmt->fetchAll();
+        $sent = $failed = 0;
+        $updStatus = $db->prepare("
+            UPDATE mass_mail_recipients SET status = ?, processed_at = NOW() WHERE id = ?
+        ");
+        foreach ($batch as $r) {
+            if (sendPersonalisedMail($r, $job['subject'], $job['body_template'], $job['event_name'] ?? '')) {
+                $sent++;
+                $updStatus->execute(['sent', $r['id']]);
+            } else {
+                $failed++;
+                $updStatus->execute(['failed', $r['id']]);
+            }
+        }
+        $db->prepare("
+            UPDATE mass_mail_jobs SET sent_count = sent_count + ?, failed_count = failed_count + ?,
+                next_run_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+            WHERE id = ?
+        ")->execute([$sent, $failed, $job['id']]);
+        $cntStmt2 = $db->prepare("
+            SELECT COUNT(*) FROM mass_mail_recipients WHERE job_id = ? AND status = 'pending'
+        ");
+        $cntStmt2->execute([$job['id']]);
+        $remaining = (int)$cntStmt2->fetchColumn();
+        if ($remaining === 0) {
+            $db->prepare("UPDATE mass_mail_jobs SET status = 'completed' WHERE id = ?")->execute([$job['id']]);
+        }
+    }
+} catch (Exception $e) {
+    error_log("Auto-process mail queue error: " . $e->getMessage());
+}
+
 $users = User::getAll();
+
+// Load pending mail jobs for the "Continue" button
+$pendingJobs = [];
+try {
+    $db = Database::getContentDB();
+    $stmt = $db->query("
+        SELECT j.*, 
+            (SELECT COUNT(*) FROM mass_mail_recipients WHERE job_id = j.id AND status = 'pending') AS pending_count
+        FROM mass_mail_jobs j
+        WHERE j.status = 'paused'
+        ORDER BY j.created_at DESC
+    ");
+    $pendingJobs = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Table may not exist yet; ignore
+}
 
 $title = 'Masseneinladungen - IBC Intranet';
 ob_start();
@@ -137,6 +365,38 @@ ob_start();
 <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/40 border border-red-400 dark:border-red-700 text-red-800 dark:text-red-300 rounded-xl flex items-center">
     <i class="fas fa-exclamation-circle text-xl mr-3"></i>
     <?php echo htmlspecialchars($error); ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($pendingJobs)): ?>
+<!-- Pending Mail Jobs -->
+<div class="mb-6 card p-6 border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
+    <h2 class="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-3">
+        <i class="fas fa-hourglass-half mr-2"></i>Offene Warteschlangen
+    </h2>
+    <?php foreach ($pendingJobs as $job): ?>
+    <div class="flex items-center justify-between mb-2">
+        <div class="text-sm text-yellow-800 dark:text-yellow-300">
+            <strong><?php echo htmlspecialchars($job['subject']); ?></strong>
+            – <?php echo (int)$job['pending_count']; ?> ausstehend
+            / <?php echo (int)$job['sent_count']; ?> versendet
+            (gesamt: <?php echo (int)$job['total_recipients']; ?>)
+            <br>
+            <span class="text-xs text-yellow-600 dark:text-yellow-400">
+                Automatisch fortgesetzt um: <?php echo htmlspecialchars($job['next_run_at'] ?? '–'); ?>
+            </span>
+        </div>
+        <form method="POST" class="ml-4">
+            <input type="hidden" name="csrf_token" value="<?php echo CSRFHandler::getToken(); ?>">
+            <input type="hidden" name="continue_queue" value="1">
+            <input type="hidden" name="job_id" value="<?php echo (int)$job['id']; ?>">
+            <button type="submit"
+                class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-semibold transition-colors">
+                <i class="fas fa-play mr-1"></i>Jetzt fortsetzen
+            </button>
+        </form>
+    </div>
+    <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -197,6 +457,19 @@ ob_start();
                 >
             </div>
             <div>
+                <label for="eventName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Event-Name (für <code>{Event_Name}</code>)
+                </label>
+                <input
+                    type="text"
+                    id="eventName"
+                    name="event_name"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="z.B. Sommerfest 2025"
+                    value="<?php echo htmlspecialchars($_POST['event_name'] ?? ''); ?>"
+                >
+            </div>
+            <div>
                 <label for="bulkBody" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nachrichtentext <span class="text-red-500">*</span>
                 </label>
@@ -210,7 +483,11 @@ ob_start();
                 ><?php echo htmlspecialchars($_POST['bulk_body'] ?? ''); ?></textarea>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     <i class="fas fa-info-circle mr-1"></i>
-                    Platzhalter aus der Vorlage (z.&nbsp;B. <code>{Anrede}</code>, <code>{eventDateDay}</code>) werden als Text übernommen.
+                    Verfügbare Platzhalter:
+                    <code>{Anrede}</code> (z.B. „Hallo Max"),
+                    <code>{Vorname}</code>,
+                    <code>{Nachname}</code>,
+                    <code>{Event_Name}</code>.
                 </p>
             </div>
         </div>
@@ -243,6 +520,18 @@ ob_start();
 
         <!-- Panel: System users -->
         <div id="recipientPanelUsers">
+            <!-- Group quick-select -->
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gruppe:</span>
+                <button type="button" id="selectGroupAlumni"
+                    class="px-3 py-1 text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors font-medium border border-purple-200 dark:border-purple-700">
+                    <i class="fas fa-graduation-cap mr-1"></i>Alumni
+                </button>
+                <button type="button" id="selectGroupMitglieder"
+                    class="px-3 py-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors font-medium border border-green-200 dark:border-green-700">
+                    <i class="fas fa-users mr-1"></i>Mitglieder
+                </button>
+            </div>
             <div class="flex items-center gap-3 mb-4">
                 <div class="relative flex-1">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -269,10 +558,12 @@ ob_start();
                 <?php
                     $uName = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
                     $uEmail = $u['email'] ?? '';
+                    $uRole  = $u['role'] ?? '';
                 ?>
                 <label class="bulk-user-row flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                        data-email="<?php echo htmlspecialchars(strtolower($uEmail)); ?>"
-                       data-name="<?php echo htmlspecialchars(strtolower($uName)); ?>">
+                       data-name="<?php echo htmlspecialchars(strtolower($uName)); ?>"
+                       data-role="<?php echo htmlspecialchars($uRole); ?>">
                     <input type="checkbox" name="bulk_user_ids[]" value="<?php echo (int)$u['id']; ?>"
                            class="bulk-user-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500">
                     <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-xs flex-shrink-0">
@@ -304,8 +595,8 @@ ob_start();
                     class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 dark:file:bg-indigo-900/40 dark:file:text-indigo-300 cursor-pointer"
                 >
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Format: eine E-Mail-Adresse pro Zeile, optional gefolgt von einem Komma und dem Namen.
-                    Beispiel: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">max.mustermann@example.com,Max Mustermann</code>
+                    Format: E-Mail, Vorname, Nachname (kommagetrennt, eine Zeile pro Person).
+                    Beispiel: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">max@example.com,Max,Mustermann</code>
                 </p>
             </div>
         </div>
@@ -342,6 +633,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const panelUsers        = document.getElementById('recipientPanelUsers');
     const panelCsv          = document.getElementById('recipientPanelCsv');
     const csvInput          = document.getElementById('bulkCsvInput');
+    const selectGroupAlumniBtn     = document.getElementById('selectGroupAlumni');
+    const selectGroupMitgliederBtn = document.getElementById('selectGroupMitglieder');
+
+    const ALUMNI_ROLES     = ['alumni', 'alumni_auditor', 'honorary_member', 'alumni_board'];
+    const MITGLIEDER_ROLES = ['board_internal', 'board_external', 'board_finance', 'member', 'candidate', 'head'];
 
     // Load template via AJAX
     if (templateSelect) {
@@ -397,6 +693,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateSelectedCount() {
         const checked = document.querySelectorAll('.bulk-user-checkbox:checked').length;
         if (selectedCount) selectedCount.textContent = checked + ' ausgewählt';
+    }
+
+    // Select users by role group
+    function selectByRoleGroup(roles) {
+        document.querySelectorAll('.bulk-user-row').forEach(row => {
+            const role = row.getAttribute('data-role') || '';
+            const cb   = row.querySelector('.bulk-user-checkbox');
+            if (cb && roles.includes(role)) {
+                cb.checked = true;
+            }
+        });
+        updateSelectedCount();
+    }
+
+    if (selectGroupAlumniBtn) {
+        selectGroupAlumniBtn.addEventListener('click', () => selectByRoleGroup(ALUMNI_ROLES));
+    }
+    if (selectGroupMitgliederBtn) {
+        selectGroupMitgliederBtn.addEventListener('click', () => selectByRoleGroup(MITGLIEDER_ROLES));
     }
 
     // Select/deselect all visible users

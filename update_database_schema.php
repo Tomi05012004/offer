@@ -668,6 +668,61 @@ try {
         "ALTER TABLE inventory_history MODIFY COLUMN change_type ENUM('add', 'remove', 'adjust', 'sync', 'checkout', 'checkin', 'writeoff') NOT NULL",
         "Update change_type enum in inventory_history table"
     );
+
+    // ============================================
+    // ENTRA-ROLE TARGETING & BATCH MAILING
+    // ============================================
+    echo "\n--- ENTRA-ROLE TARGETING & BATCH MAILING UPDATES ---\n";
+
+    // Add target_roles column to polls table
+    executeSql(
+        $content_db,
+        "ALTER TABLE polls ADD COLUMN target_roles JSON DEFAULT NULL COMMENT 'JSON array of Microsoft Entra roles required to see this poll'",
+        "Add target_roles column to polls table"
+    );
+
+    // Create mass_mail_jobs table
+    executeSql(
+        $content_db,
+        "CREATE TABLE IF NOT EXISTS mass_mail_jobs (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            subject VARCHAR(255) NOT NULL COMMENT 'Email subject',
+            body_template TEXT NOT NULL COMMENT 'Raw body template with placeholders',
+            event_name VARCHAR(255) DEFAULT NULL COMMENT 'Value for {Event_Name} placeholder',
+            status ENUM('active','paused','completed') NOT NULL DEFAULT 'active',
+            next_run_at DATETIME DEFAULT NULL COMMENT 'When this job should automatically continue',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by INT UNSIGNED DEFAULT NULL,
+            total_recipients INT UNSIGNED NOT NULL DEFAULT 0,
+            sent_count INT UNSIGNED NOT NULL DEFAULT 0,
+            failed_count INT UNSIGNED NOT NULL DEFAULT 0,
+            INDEX idx_status (status),
+            INDEX idx_next_run_at (next_run_at),
+            INDEX idx_created_by (created_by)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+          COMMENT='Tracks bulk email sending jobs for batch processing'",
+        "Create mass_mail_jobs table"
+    );
+
+    // Create mass_mail_recipients table
+    executeSql(
+        $content_db,
+        "CREATE TABLE IF NOT EXISTS mass_mail_recipients (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            job_id INT UNSIGNED NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            first_name VARCHAR(100) DEFAULT NULL,
+            last_name VARCHAR(100) DEFAULT NULL,
+            status ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
+            processed_at DATETIME DEFAULT NULL,
+            FOREIGN KEY (job_id) REFERENCES mass_mail_jobs(id) ON DELETE CASCADE,
+            INDEX idx_job_id (job_id),
+            INDEX idx_status (status),
+            INDEX idx_job_status (job_id, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+          COMMENT='Individual recipients for bulk email jobs'",
+        "Create mass_mail_recipients table"
+    );
     
     // ============================================
     // SUMMARY

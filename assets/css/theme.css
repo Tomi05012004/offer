@@ -1986,13 +1986,13 @@ body:not(.dark-mode) .card:hover::after {
 
 /* Sidebar Navigation Links - Modern Style */
 .sidebar nav a {
-    border-radius: 10px;
+    border-radius: 8px;
     margin: 2px 12px;
     padding: 10px 16px !important;
     font-size: 0.9rem;
     font-weight: 500;
     letter-spacing: 0.01em;
-    transition: all var(--transition-normal);
+    transition: all 0.3s ease;
     position: relative;
     display: flex !important;
     align-items: center !important;
@@ -2002,8 +2002,8 @@ body:not(.dark-mode) .card:hover::after {
 }
 
 .sidebar nav a:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-radius: 5px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
     transform: translateX(4px);
 }
 
@@ -2012,16 +2012,16 @@ body:not(.dark-mode) .card:hover::after {
     background: rgba(255, 255, 255, 0.1) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     color: #ffffff !important;
 }
 
 .sidebar nav a i {
     width: 20px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     opacity: 0.85;
-    margin-right: 0.75rem;
+    margin-right: 15px;
     flex-shrink: 0;
     transition: opacity var(--transition-fast);
 }
@@ -2043,12 +2043,21 @@ a.btn-secondary {
     text-decoration: none !important;
 }
 
-/* Sidebar hover - rounded corners and smooth background transition */
-.sidebar nav a,
-.sidebar .border-white\/30 {
-    border-radius: 5px;
-    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease !important;
+/* Sidebar nav-link: rounded corners, hover effect, and smooth transition */
+.sidebar .nav-link {
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
+
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.sidebar .nav-link i {
+    font-size: 1.1rem;
+    margin-right: 15px;
+}
+
 
 /* Sidebar section labels: left-aligned */
 .sidebar p {
@@ -4363,14 +4372,15 @@ body {
 .sidebar nav a[class*="bg-white/20"] {
     background: rgba(255, 255, 255, 0.1) !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     color: #ffffff !important;
 }
 
 /* Sidebar section label */
 .sidebar p[class*="uppercase"] {
-    color: rgba(255, 255, 255, 0.45) !important;
-    font-size: 0.65rem !important;
+    color: #b2bec3 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
     letter-spacing: 0.1em !important;
 }
 

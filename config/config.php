@@ -98,6 +98,9 @@ define('CLIENT_ID',    AZURE_CLIENT_ID);
 define('CLIENT_SECRET', AZURE_CLIENT_SECRET);
 define('REDIRECT_URI', AZURE_REDIRECT_URI);
 
+// Default profile image fallback path
+define('DEFAULT_PROFILE_IMAGE', 'assets/img/default_profil.png');
+
 // Invoice Settings
 define('INVOICE_NOTIFICATION_EMAIL', _env('INVOICE_NOTIFICATION_EMAIL', 'vorstand@business-consulting.de'));
 

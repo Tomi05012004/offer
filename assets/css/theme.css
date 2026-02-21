@@ -4686,6 +4686,13 @@ img:not([loading]) {
     font-weight: 600;
 }
 
+/* Prevent long text from stretching the alumni directory card */
+.directory-card-text-truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* Role badge - rounded corners */
 .directory-role-badge {
     border-radius: 20px;

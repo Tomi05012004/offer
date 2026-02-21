@@ -243,7 +243,7 @@ body:not(.dark-mode) .sidebar a:hover {
 /* Sidebar Active State - Transparent overlay with blue left indicator */
 .sidebar a.active,
 .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
@@ -289,13 +289,14 @@ body.dark-mode .sidebar {
 }
 
 body.dark-mode .sidebar a:hover {
-    background-color: rgba(255, 255, 255, 0.15) !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(4px);
     border-radius: 8px !important;
 }
 
 body.dark-mode .sidebar a.active,
 body.dark-mode .sidebar a[class*="bg-white/20"] {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
@@ -2032,26 +2033,28 @@ body:not(.dark-mode) .card:hover::after {
 }
 
 .sidebar nav a:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(4px);
     border-radius: 8px !important;
     transform: translateX(4px);
 }
 
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
     border-right: none !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
     color: #ffffff !important;
 }
 
-.sidebar nav a i {
-    width: 20px;
+.sidebar nav a i,
+.sidebar nav a svg {
+    width: 25px;
     text-align: center;
     font-size: 1.1rem;
     opacity: 0.85;
-    margin-right: 15px;
+    margin-right: 12px;
     flex-shrink: 0;
     transition: opacity var(--transition-fast);
 }
@@ -2077,15 +2080,23 @@ a.btn-secondary {
 .sidebar .nav-link {
     border-radius: 8px;
     transition: all 0.3s ease;
+    font-weight: 400;
 }
 
 .sidebar .nav-link:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(4px);
 }
 
-.sidebar .nav-link i {
+.sidebar .nav-link i,
+.sidebar .nav-link svg {
+    width: 25px;
+    text-align: center;
     font-size: 1.1rem;
-    margin-right: 15px;
+    opacity: 0.85;
+    margin-right: 12px;
+    flex-shrink: 0;
+    transition: opacity var(--transition-fast);
 }
 
 
@@ -4014,11 +4025,12 @@ body:not(.dark-mode) .hero-gradient .hero-date {
     color: #ffffff !important; /* Erzwinge Weiß auch im Lightmode */
 }
 .sidebar a:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(4px);
 }
 .sidebar .active-link { /* Falls du eine Klasse für aktive Links hast */
     border-left: 4px solid var(--ibc-blue-light);
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* --- LIGHT/DARK MODE GLOBALS --- */
@@ -4400,7 +4412,7 @@ body {
 /* Refined active nav item - transparent overlay with blue left indicator */
 .sidebar nav a.active,
 .sidebar nav a[class*="bg-white/20"] {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
     border-left: 4px solid var(--ibc-blue-light) !important;
     border-radius: 8px !important;
     color: #ffffff !important;

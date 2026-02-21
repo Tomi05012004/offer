@@ -88,7 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploadError = $_FILES['image']['error'];
             
             if ($uploadError === UPLOAD_ERR_OK) {
-                $uploadResult = SecureImageUpload::uploadImage($_FILES['image']);
+                $blogUploadDir = __DIR__ . '/../../uploads/blog/';
+                if (!is_dir($blogUploadDir)) {
+                    mkdir($blogUploadDir, 0755, true);
+                }
+                $uploadResult = SecureImageUpload::uploadImage($_FILES['image'], $blogUploadDir);
                 
                 if ($uploadResult['success']) {
                     // Delete old image if updating and old image exists

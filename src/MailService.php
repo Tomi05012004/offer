@@ -917,6 +917,17 @@ class MailService {
             $mail->Subject = $subject;
             $mail->Body = $htmlBody;
             
+            // Embed logo so cid:ibc_logo is rendered in the email template
+            $imagePath = __DIR__ . '/../assets/img/ibc_logo_original_navbar.webp';
+            if (!file_exists($imagePath)) {
+                $imagePath = __DIR__ . '/../assets/img/ibc_logo_original_navbar.png';
+            }
+            if (file_exists($imagePath)) {
+                $mail->addEmbeddedImage($imagePath, 'ibc_logo');
+            } else {
+                error_log("MailService::sendEmail: Logo file not found; email logo (cid:ibc_logo) will not render.");
+            }
+            
             // Send (with output buffering to capture any debug output)
             ob_start();
             $mail->send();

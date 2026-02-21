@@ -394,7 +394,6 @@ ob_start();
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Profil</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Benutzer</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Entra-Rollen</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Entra-Status</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Intranet-Rolle</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Status</th>
@@ -454,48 +453,6 @@ ob_start();
                                 </div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">ID: <?php echo $user['id']; ?></div>
                             </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex flex-col space-y-1">
-                            <?php 
-                            // Display Microsoft Entra roles if available
-                            $entraRoles = null;
-                            if (!empty($user['entra_roles'])) {
-                                $entraRoles = json_decode($user['entra_roles'], true);
-                            }
-                            
-                            if (!empty($entraRoles) && is_array($entraRoles)): 
-                            ?>
-                                <?php foreach ($entraRoles as $entraRole):
-                                    // Handle both object format {id, displayName} and legacy string format
-                                    if (is_array($entraRole)) {
-                                        $groupId = $entraRole['id'] ?? '';
-                                        if ($groupId && isset($roleIdToKey[$groupId])) {
-                                            $roleLabel = 'Entra: ' . translateRole($roleIdToKey[$groupId]);
-                                        } else {
-                                            $roleLabel = 'Entra: ' . ($entraRole['displayName'] ?? $groupId);
-                                        }
-                                    } else {
-                                        // Legacy: plain string – may be a UUID or a display name
-                                        if (isset($roleIdToKey[$entraRole])) {
-                                            $roleLabel = 'Entra: ' . translateRole($roleIdToKey[$entraRole]);
-                                        } else {
-                                            $roleLabel = 'Entra: ' . $entraRole;
-                                        }
-                                    }
-                                ?>
-                                <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-800 dark:text-blue-200 rounded-lg font-medium shadow-sm"
-                                      title="<?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <i class="fas fa-user-tag mr-1.5 text-xs"></i>
-                                    <?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>
-                                </span>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <span class="text-xs text-gray-500 dark:text-gray-400 italic flex items-center">
-                                    <i class="fas fa-info-circle mr-1.5"></i>Nicht verfügbar
-                                </span>
-                            <?php endif; ?>
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">

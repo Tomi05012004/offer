@@ -110,7 +110,7 @@ class EasyVereinSync {
         
         // Send email
         try {
-            MailService::sendEmail('tlehmann630@gmail.com', $subject, $htmlBody);
+            MailService::sendEmail(defined('INVENTORY_BOARD_EMAIL') ? INVENTORY_BOARD_EMAIL : SMTP_FROM, $subject, $htmlBody);
         } catch (Exception $e) {
             error_log('Failed to send critical alert email: ' . $e->getMessage());
         }

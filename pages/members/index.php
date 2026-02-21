@@ -189,6 +189,11 @@ ob_start();
                         $showPlaceholder = false;
                     }
                 }
+                // Fall back to default profile image if no valid member image
+                if ($showPlaceholder) {
+                    $imagePath = asset(Member::getImageUrl(''));
+                    $showPlaceholder = false;
+                }
                 
                 // Info snippet: Show position, or study_program + degree, or 'Mitglied'
                 $infoSnippet = '';

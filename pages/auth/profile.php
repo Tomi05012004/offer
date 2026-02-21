@@ -639,11 +639,9 @@ ob_start();
                     
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profilbild</label>
-                        <?php if (!empty($profile['image_path'])): ?>
                         <div class="mb-2">
-                            <img src="<?php echo asset($profile['image_path']); ?>" alt="Profilbild" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
+                            <img src="<?php echo asset(Member::getImageUrl($profile['image_path'] ?? '')); ?>" alt="Profilbild" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
                         </div>
-                        <?php endif; ?>
                         <input 
                             type="file" 
                             name="profile_picture" 

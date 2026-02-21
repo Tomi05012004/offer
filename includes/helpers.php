@@ -277,6 +277,19 @@ function getAvatarColor($name) {
 }
 
 /**
+ * Get the profile image URL with fallback to the default profile image
+ *
+ * @param string|null $imagePath The stored image path from the database
+ * @return string URL-ready image path
+ */
+function getProfileImageUrl(?string $imagePath): string {
+    if (!empty($imagePath)) {
+        return $imagePath;
+    }
+    return defined('DEFAULT_PROFILE_IMAGE') ? DEFAULT_PROFILE_IMAGE : 'assets/img/default_profil.png';
+}
+
+/**
  * Extract display names from group objects
  * Groups can be either strings (legacy format) or objects with id and displayName
  * 

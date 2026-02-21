@@ -9,6 +9,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../database.php';
 require_once __DIR__ . '/Alumni.php';
 require_once __DIR__ . '/../../src/Auth.php';
+require_once __DIR__ . '/../helpers.php';
 
 class Member {
     
@@ -293,6 +294,16 @@ class Member {
         return $stmt->execute($values);
     }
     
+    /**
+     * Get the profile image URL with fallback to default image
+     *
+     * @param string|null $imagePath The stored image path from the database
+     * @return string URL-ready image path
+     */
+    public static function getImageUrl(?string $imagePath): string {
+        return getProfileImageUrl($imagePath);
+    }
+
     /**
      * Update or create member profile (upsert)
      * Note: Uses alumni_profiles table as this is the central profile table for all users

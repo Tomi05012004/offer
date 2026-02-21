@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request'])) {
             // NOTE: Email address is hardcoded as per requirements
             // For production, consider moving to config file
             $emailSent = MailService::send(
-                'tlehmann6300@gmail.com',
+                defined('SMTP_FROM') && SMTP_FROM !== '' ? SMTP_FROM : 'vorstand@business-consulting.de',
                 'Schulungsanfrage von ' . $alumniName,
                 $emailBody
             );

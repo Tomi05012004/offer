@@ -613,6 +613,13 @@ try {
         "Add quantity_borrowed column to inventory_items table"
     );
     
+    // Add quantity_rented column to inventory_items
+    executeSql(
+        $content_db,
+        "ALTER TABLE inventory_items ADD COLUMN quantity_rented INT NOT NULL DEFAULT 0 COMMENT 'Number of items currently rented (via rental with return date, awaiting board confirmation)' AFTER quantity_borrowed",
+        "Add quantity_rented column to inventory_items table"
+    );
+    
     // Add purpose column to rentals
     executeSql(
         $content_db,
@@ -637,8 +644,15 @@ try {
     // Add status column to rentals
     executeSql(
         $content_db,
-        "ALTER TABLE rentals ADD COLUMN status ENUM('active', 'returned', 'defective') NOT NULL DEFAULT 'active' COMMENT 'Rental status' AFTER actual_return",
+        "ALTER TABLE rentals ADD COLUMN status ENUM('active', 'returned', 'defective', 'pending_confirmation') NOT NULL DEFAULT 'active' COMMENT 'Rental status' AFTER actual_return",
         "Add status column to rentals table"
+    );
+    
+    // Update status column to include pending_confirmation (if already exists)
+    executeSql(
+        $content_db,
+        "ALTER TABLE rentals MODIFY COLUMN status ENUM('active', 'returned', 'defective', 'pending_confirmation') NOT NULL DEFAULT 'active' COMMENT 'Rental status'",
+        "Update status enum in rentals table to include pending_confirmation"
     );
     
     // Add defect_notes column to rentals

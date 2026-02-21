@@ -198,7 +198,7 @@ ob_start();
             </div>
 
             <!-- Checkout/Borrow Button for all users -->
-            <?php if ($item['quantity'] > 0): ?>
+            <?php if ($item['available_quantity'] > 0): ?>
             <div class="mb-8 flex gap-3">
                 <a href="checkout.php?id=<?php echo $item['id']; ?>" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 font-bold shadow-lg text-lg">
                     <i class="fas fa-hand-holding-box mr-3"></i>Entnehmen / Ausleihen
@@ -408,8 +408,24 @@ ob_start();
                         <?php echo $checkout['expected_return'] ? date('d.m.Y', strtotime($checkout['expected_return'])) : '-'; ?>
                     </td>
                     <td class="px-6 py-4 text-sm">
-                        <span class="px-3 py-1.5 text-xs font-semibold rounded-full <?php echo $checkout['status'] === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300'; ?>">
-                            <?php echo htmlspecialchars($checkout['status']); ?>
+                        <span class="px-3 py-1.5 text-xs font-semibold rounded-full <?php
+                            if ($checkout['status'] === 'pending_confirmation') {
+                                echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+                            } elseif ($checkout['status'] === 'active') {
+                                echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                            } else {
+                                echo 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+                            }
+                        ?>">
+                            <?php
+                            $statusLabels = [
+                                'active' => 'Aktiv',
+                                'pending_confirmation' => 'Rückgabe ausstehend',
+                                'returned' => 'Zurückgegeben',
+                                'defective' => 'Defekt'
+                            ];
+                            echo htmlspecialchars($statusLabels[$checkout['status']] ?? $checkout['status']);
+                            ?>
                         </span>
                     </td>
                 </tr>
@@ -522,7 +538,7 @@ ob_start();
 
             <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg mb-4">
                 <p class="font-semibold text-gray-800 dark:text-gray-100"><?php echo htmlspecialchars($item['name']); ?></p>
-                <p class="text-sm text-gray-600 dark:text-gray-300">Verfügbar: <?php echo htmlspecialchars($item['quantity']); ?> <?php echo htmlspecialchars($item['unit']); ?></p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">Verfügbar: <?php echo htmlspecialchars(max(0, $item['available_quantity'])); ?> <?php echo htmlspecialchars($item['unit']); ?></p>
             </div>
 
             <div>
@@ -534,7 +550,7 @@ ob_start();
                     name="amount" 
                     required 
                     min="1" 
-                    max="<?php echo htmlspecialchars($item['quantity']); ?>"
+                    max="<?php echo htmlspecialchars(max(0, $item['available_quantity'])); ?>"
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100"
                     placeholder="Anzahl eingeben"
                 >

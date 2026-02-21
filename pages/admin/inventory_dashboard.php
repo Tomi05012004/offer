@@ -13,6 +13,26 @@ if (!Auth::check() || !Auth::isBoard()) {
     exit;
 }
 
+// Check if user can confirm returns (board roles + head)
+$canConfirmReturns = Auth::hasRole(['board_finance', 'board_internal', 'board_external', 'head']);
+
+// Handle return confirmation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_return'])) {
+    if (!$canConfirmReturns) {
+        $confirmError = 'Keine Berechtigung zum Bestätigen von Rückgaben';
+    } else {
+        $rentalId = intval($_POST['rental_id'] ?? 0);
+        if ($rentalId > 0) {
+            $result = Inventory::confirmReturn($rentalId, $_SESSION['user_id']);
+            if ($result['success']) {
+                $confirmSuccess = $result['message'];
+            } else {
+                $confirmError = $result['message'];
+            }
+        }
+    }
+}
+
 // Handle CSV export
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $db = Database::getContentDB();
@@ -27,10 +47,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             r.created_at,
             i.name AS item_name,
             i.unit,
-            r.user_id
+            r.user_id,
+            r.status
         FROM rentals r
         JOIN inventory_items i ON r.item_id = i.id
         WHERE r.actual_return IS NULL
+        AND r.status IN ('active', 'pending_confirmation')
         ORDER BY r.created_at DESC
     ");
     $rentals = $stmt->fetchAll();
@@ -77,7 +99,47 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
 // Fetch all active rentals
 $checkedOutStats = Inventory::getCheckedOutStats();
-$activeRentals = $checkedOutStats['checkouts'];
+$activeRentals = array_filter($checkedOutStats['checkouts'], function($r) {
+    return $r['status'] === 'active';
+});
+
+// Fetch pending confirmation rentals
+$pendingRentals = [];
+$db = Database::getContentDB();
+$pendingStmt = $db->query("
+    SELECT 
+        r.id,
+        r.item_id,
+        r.user_id,
+        r.amount,
+        r.created_at as rented_at,
+        r.expected_return,
+        r.status,
+        i.name as item_name,
+        i.unit
+    FROM rentals r
+    JOIN inventory_items i ON r.item_id = i.id
+    WHERE r.actual_return IS NULL
+    AND r.status = 'pending_confirmation'
+    ORDER BY r.created_at DESC
+");
+$pendingRentalsRaw = $pendingStmt->fetchAll();
+
+if (!empty($pendingRentalsRaw)) {
+    $userDb = Database::getUserDB();
+    $userIds = array_unique(array_column($pendingRentalsRaw, 'user_id'));
+    $placeholders = str_repeat('?,', count($userIds) - 1) . '?';
+    $userStmt = $userDb->prepare("SELECT id, email FROM users WHERE id IN ($placeholders)");
+    $userStmt->execute($userIds);
+    $users = [];
+    foreach ($userStmt->fetchAll() as $u) {
+        $users[$u['id']] = $u['email'];
+    }
+    foreach ($pendingRentalsRaw as &$pr) {
+        $pr['borrower_email'] = $users[$pr['user_id']] ?? 'Unbekannt';
+    }
+    $pendingRentals = $pendingRentalsRaw;
+}
 
 $title = 'Inventar-Dashboard - IBC Intranet';
 ob_start();
@@ -105,8 +167,20 @@ ob_start();
     </div>
 </div>
 
+<?php if (!empty($confirmSuccess)): ?>
+<div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+    <i class="fas fa-check-circle mr-2"></i><?php echo htmlspecialchars($confirmSuccess); ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($confirmError)): ?>
+<div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+    <i class="fas fa-exclamation-circle mr-2"></i><?php echo htmlspecialchars($confirmError); ?>
+</div>
+<?php endif; ?>
+
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <div class="card p-6">
         <div class="flex items-center justify-between">
             <div>
@@ -132,6 +206,19 @@ ob_start();
     <div class="card p-6">
         <div class="flex items-center justify-between">
             <div>
+                <p class="text-sm font-medium text-gray-500 mb-1">Rückgabe ausstehend</p>
+                <p class="text-3xl font-bold <?php echo count($pendingRentals) > 0 ? 'text-yellow-600' : 'text-gray-800'; ?>">
+                    <?php echo count($pendingRentals); ?>
+                </p>
+            </div>
+            <div class="p-3 <?php echo count($pendingRentals) > 0 ? 'bg-yellow-100' : 'bg-gray-100'; ?> rounded-full">
+                <i class="fas fa-clock <?php echo count($pendingRentals) > 0 ? 'text-yellow-600' : 'text-gray-400'; ?> text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="card p-6">
+        <div class="flex items-center justify-between">
+            <div>
                 <p class="text-sm font-medium text-gray-500 mb-1">Überfällig</p>
                 <p class="text-3xl font-bold <?php echo $checkedOutStats['overdue'] > 0 ? 'text-red-600' : 'text-gray-800'; ?>">
                     <?php echo $checkedOutStats['overdue']; ?>
@@ -143,6 +230,67 @@ ob_start();
         </div>
     </div>
 </div>
+
+<!-- Pending Return Confirmations Table -->
+<?php if (!empty($pendingRentals)): ?>
+<div class="card p-6 mb-8 border-2 border-yellow-300">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-clock text-yellow-600 mr-2"></i>
+        Rückgaben ausstehend (<?php echo count($pendingRentals); ?>)
+    </h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-yellow-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Benutzer</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Artikel</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menge</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausgeliehen am</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rückgabe bis</th>
+                    <?php if ($canConfirmReturns): ?>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktion</th>
+                    <?php endif; ?>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <?php foreach ($pendingRentals as $rental): ?>
+                <tr class="hover:bg-yellow-50 bg-yellow-50/50">
+                    <td class="px-4 py-3 text-sm text-gray-800">
+                        <i class="fas fa-user text-gray-400 mr-1"></i>
+                        <?php echo htmlspecialchars($rental['borrower_email'] ?? 'Unbekannt'); ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <a href="../inventory/view.php?id=<?php echo $rental['item_id']; ?>" class="font-semibold text-purple-600 hover:text-purple-800">
+                            <?php echo htmlspecialchars($rental['item_name']); ?>
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <span class="font-semibold"><?php echo $rental['amount']; ?></span> <?php echo htmlspecialchars($rental['unit']); ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <?php echo date('d.m.Y H:i', strtotime($rental['rented_at'])); ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <?php echo !empty($rental['expected_return']) ? date('d.m.Y', strtotime($rental['expected_return'])) : '-'; ?>
+                    </td>
+                    <?php if ($canConfirmReturns): ?>
+                    <td class="px-4 py-3 text-sm">
+                        <form method="POST" onsubmit="return confirm('Rückgabe für ' + <?php echo json_encode($rental['item_name']); ?> + ' bestätigen?');">
+                            <input type="hidden" name="confirm_return" value="1">
+                            <input type="hidden" name="rental_id" value="<?php echo $rental['id']; ?>">
+                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium">
+                                <i class="fas fa-check mr-1"></i>Rückgabe bestätigen
+                            </button>
+                        </form>
+                    </td>
+                    <?php endif; ?>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Active Rentals Table -->
 <div class="card p-6">

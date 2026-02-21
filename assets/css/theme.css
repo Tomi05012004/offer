@@ -4128,3 +4128,412 @@ a {
 p a {
     text-decoration: underline !important;
 } 
+
+/* ============================================================
+   CROSS-BROWSER & PERFORMANCE IMPROVEMENTS 2026
+   - iOS Safari safe-area support
+   - Mobile viewport height fix (100dvh)  
+   - Additional vendor prefixes
+   - Performance optimizations
+   ============================================================ */
+
+/* iOS Safari: Fix 100vh issue with dynamic viewport height */
+:root {
+    --app-height: 100vh;
+}
+
+/* Use modern dynamic viewport height where supported */
+@supports (height: 100dvh) {
+    :root {
+        --app-height: 100dvh;
+    }
+}
+
+/* iOS safe area support for the sidebar and mobile topbar */
+.sidebar {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: constant(safe-area-inset-bottom, 0); /* iOS < 11.2 fallback */
+}
+
+.mobile-topbar {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-top: constant(safe-area-inset-top, 0);
+    padding-left: calc(1rem + env(safe-area-inset-left, 0));
+    padding-left: calc(1rem + constant(safe-area-inset-left, 0));
+    padding-right: calc(1rem + env(safe-area-inset-right, 0));
+    padding-right: calc(1rem + constant(safe-area-inset-right, 0));
+}
+
+/* Bottom safe-area padding for main content on iPhone with home indicator */
+main {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0)) !important;
+}
+
+@media (min-width: 768px) {
+    main {
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 0)) !important;
+    }
+}
+
+/* Mobile full-height sidebar fix for iOS */
+@media (max-width: 767px) {
+    .sidebar {
+        height: 100vh; /* fallback */
+        height: 100dvh; /* modern browsers */
+        height: -webkit-fill-available; /* iOS Safari */
+    }
+}
+
+/* ============================================================
+   CROSS-BROWSER APPEARANCE FIXES
+   ============================================================ */
+
+/* Ensure consistent form element appearance across all browsers */
+input,
+select,
+textarea,
+button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Exception: keep native styling for checkboxes and radios */
+input[type="checkbox"],
+input[type="radio"] {
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
+}
+
+/* Safari fix: Remove inner padding on search inputs */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+}
+
+/* Firefox: Remove number input arrows */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Safari: Fix button/input text inheritance */
+button,
+input,
+optgroup,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* ============================================================
+   SAFARI-SPECIFIC FIXES
+   ============================================================ */
+
+/* Safari: Fix sticky positioning */
+.sidebar {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+/* Safari: Fix backdrop-filter (already handled but ensure fallback) */
+@supports not (backdrop-filter: blur(1px)) {
+    .glass-card,
+    .glass,
+    .glass-effect {
+        background: rgba(15, 20, 35, 0.95) !important;
+    }
+    .login-container {
+        background: rgba(15, 20, 35, 0.97) !important;
+    }
+}
+
+/* Safari: Fix transform performance */
+.card,
+.sidebar nav a,
+.btn-primary {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+}
+
+/* ============================================================
+   FIREFOX-SPECIFIC IMPROVEMENTS
+   ============================================================ */
+
+/* Firefox: Ensure consistent select rendering */
+@-moz-document url-prefix() {
+    select {
+        text-indent: 0.01px;
+        text-overflow: '';
+    }
+}
+
+/* Firefox: Better focus rings */
+::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
+/* ============================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================ */
+
+/* GPU acceleration for animated elements - only during interaction */
+.sidebar,
+.modal {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Hint browser about animated properties - only on hover for efficiency */
+.card:hover {
+    will-change: transform, box-shadow;
+}
+
+.card:not(:hover) {
+    will-change: auto;
+}
+
+.sidebar nav a:hover {
+    will-change: background-color, transform;
+}
+
+/* Contain layout/paint for performance */
+.card {
+    contain: layout style;
+}
+
+/* Optimize font rendering across all browsers */
+body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* ============================================================
+   ENHANCED MOBILE TOPBAR
+   ============================================================ */
+
+/* Premium glass topbar with gradient */
+.mobile-topbar {
+    background: linear-gradient(90deg, var(--ibc-blue-dark) 0%, var(--ibc-blue) 60%, var(--ibc-blue-dark) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* ============================================================
+   ENHANCED SIDEBAR DESIGN  
+   ============================================================ */
+
+/* Refined sidebar with subtle texture */
+.sidebar {
+    background: linear-gradient(180deg,
+        #004a87 0%,
+        #0055a0 15%,
+        #0066b3 40%,
+        #0055a0 75%,
+        #003d6b 100%
+    ) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Sidebar logo section */
+.sidebar .sidebar-logo-section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Refined active nav item */
+.sidebar nav a.active,
+.sidebar nav a[class*="bg-white/20"] {
+    background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.12) 100%) !important;
+    box-shadow: inset 3px 0 0 var(--ibc-green), 0 2px 12px rgba(0, 31, 56, 0.3) !important;
+    border-radius: 10px !important;
+}
+
+/* Sidebar section label */
+.sidebar p[class*="uppercase"] {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 0.65rem !important;
+    letter-spacing: 0.1em !important;
+}
+
+/* ============================================================
+   ENHANCED CARD DESIGN
+   ============================================================ */
+
+/* Light mode: premium card with subtle shimmer */
+body:not(.dark-mode) .card {
+    background: linear-gradient(145deg, #ffffff 0%, #fafbfd 100%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.03),
+        0 4px 16px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+body:not(.dark-mode) .card:hover {
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 16px 40px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 102, 179, 0.1) !important;
+    transform: translateY(-3px);
+}
+
+/* ============================================================
+   IMPROVED TYPOGRAPHY ACROSS BROWSERS
+   ============================================================ */
+
+/* Refined heading styles */
+h1, h2, h3, h4, h5, h6 {
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Better paragraph spacing */
+p {
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+    orphans: 3;
+    widows: 3;
+}
+
+/* ============================================================
+   RESPONSIVE TABLE IMPROVEMENTS  
+   ============================================================ */
+
+/* Scrollable tables with visual hint */
+.table-scroll-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.table-scroll-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.06));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.table-scroll-wrapper.has-overflow::after {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    /* Better table UX on mobile */
+    .table-responsive {
+        border-radius: var(--radius-md);
+        box-shadow: inset 0 0 0 1px var(--border-color);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+
+    /* Frozen first column option */
+    .table-responsive .sticky-col {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        background: var(--bg-card);
+        z-index: 1;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* ============================================================
+   IMPROVED FOCUS STATES FOR ACCESSIBILITY + CROSS-BROWSER
+   ============================================================ */
+
+/* Better focus for Firefox (it uses :focus instead of :focus-visible) */
+@-moz-document url-prefix() {
+    a:focus:not(:focus-visible),
+    button:focus:not(:focus-visible) {
+        outline: none;
+    }
+    a:focus-visible,
+    button:focus-visible {
+        outline: 2px solid var(--ibc-blue);
+        outline-offset: 2px;
+    }
+}
+
+/* ============================================================
+   MODAL IMPROVEMENTS FOR ALL BROWSERS
+   ============================================================ */
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+    /* iOS fix: use padding instead of overflow on body to prevent content shift */
+    padding-right: 0 !important;
+}
+
+/* ============================================================
+   SAFARI GRID/FLEX FIXES
+   ============================================================ */
+
+/* Safari: gap property in flex containers */
+.flex.gap-1 { gap: 0.25rem; }
+.flex.gap-2 { gap: 0.5rem; }
+.flex.gap-3 { gap: 0.75rem; }
+.flex.gap-4 { gap: 1rem; }
+
+/* ============================================================
+   OVERSCROLL BEHAVIOR  
+   ============================================================ */
+
+/* Prevent pull-to-refresh in modals/sidebars */
+.sidebar,
+.modal-content,
+[role="dialog"] {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   IMAGE LOADING IMPROVEMENTS
+   ============================================================ */
+
+/* Smooth image loading with fade-in */
+img {
+    -webkit-transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease;
+}
+
+/* Loading state for images */
+img[loading="lazy"] {
+    opacity: 0;
+}
+
+img[loading="lazy"].loaded,
+img:not([loading]) {
+    opacity: 1;
+}
+
+/* ============================================================
+   END CROSS-BROWSER & PERFORMANCE IMPROVEMENTS
+   ============================================================ */

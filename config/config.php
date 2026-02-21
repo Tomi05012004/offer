@@ -101,6 +101,9 @@ define('REDIRECT_URI', AZURE_REDIRECT_URI);
 // Invoice Settings
 define('INVOICE_NOTIFICATION_EMAIL', _env('INVOICE_NOTIFICATION_EMAIL', 'finanzen@business-consulting.de'));
 
+// Inventory Settings
+define('INVENTORY_BOARD_EMAIL', _env('INVENTORY_BOARD_EMAIL', 'vorstand-intern@business-consulting.de'));
+
 // EasyVerein API
 define('EASYVEREIN_API_TOKEN', _env('EASYVEREIN_API_TOKEN', ''));
 
